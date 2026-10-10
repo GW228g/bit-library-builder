@@ -73,6 +73,13 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
+.choices{display:grid;gap:12px;margin:14px 0}
+.choice{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.choice h2{margin:0 0 6px;font-size:1.1rem}
+.choice p{margin:0 0 12px;color:var(--mute);font-size:.92rem}
+.choice .btn{width:100%}
+.resume{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--chip);border-radius:12px;padding:10px 14px;margin:10px 0}
+@media (min-width:760px){.choices{grid-template-columns:repeat(3,1fr)}}
 .own{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px dashed var(--accent);border-radius:14px;padding:12px 14px;margin:6px 0 4px}
 .own p{margin:0;font-size:.85rem;color:var(--mute)}
 .own strong{display:block;color:var(--ink);font-size:.95rem}
@@ -97,6 +104,39 @@ footer ul{padding-left:18px;margin:6px 0}
     <h1>Bit Library Builder</h1>
     <p class="sub">Search vendor bit libraries, tick the bits you own, download one <code>.tools</code> file for MillMage.</p>
   </header>
+
+  <section id="home">
+    <div class="resume hide" id="resume"><span id="resumeTxt"></span><button class="btn sm" id="resumeBtn">Continue</button></div>
+    <div class="choices">
+      <div class="choice">
+        <h2>Convert my own library</h2>
+        <p>Already have a Fusion 360 or Vectric tool library with your own feeds and speeds? Upload it and get a MillMage file. You can fine-tune any bit before you download.</p>
+        <button class="btn" id="c-own">Upload my library</button>
+        <details><summary>How do I export my library?</summary>
+          <ol class="steps">
+            <li><b>Fusion 360:</b> Manage → Tool Library → right-click your library → Export. Choose <code>.json</code> or <code>.tools</code>.</li>
+            <li><b>Vectric (VCarve/Aspire):</b> Tool Database → Export Tool Database as a <code>.vtdb</code>. Older <code>.tool</code> files work too.</li>
+          </ol>
+        </details>
+      </div>
+      <div class="choice">
+        <h2>Add vendor files to convert</h2>
+        <p>Download a bit maker's tool library from their site, add it here, and pick the bits you own. Fusion 360 <code>.json</code>/<code>.tools</code> and Vectric <code>.vtdb</code>/<code>.tool</code> files work.</p>
+        <button class="btn" id="c-vendor">Add vendor files</button>
+        <details><summary>Where to download vendor libraries</summary>
+          <ul class="steps" id="vendorLinks"></ul>
+        </details>
+      </div>
+      <div class="choice">
+        <h2>Pick bits from the list</h2>
+        <p><span id="listCount">1,000+</span> bits from Bits&amp;Bits, SpeTool, Amana Tool, Whiteside and Cadence are already loaded. Search, filter, tick the ones you own.</p>
+        <button class="btn" id="c-list">Browse the list</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="app" class="hide">
+  <button class="link" id="back">← Back to start</button>
   <div class="stick"><input id="q" type="search" placeholder='Search: "1/4 down spiral", "60 v-bit", W06006…' autocomplete="off" enterkeyhint="search"></div>
     <div class="bar">
     <div class="filters" id="typeChips" role="group" aria-label="Bit type"></div>
@@ -107,20 +147,10 @@ footer ul{padding-left:18px;margin:6px 0}
       <div><label for="shank">Shank size</label><select id="shank"></select></div>
     </div>
   </div>
-  <div class="own">
-    <div><strong>Have your own library?</strong><p>Convert a Fusion 360 or Vectric tool library, with your own feeds and speeds. Files stay on your device.</p></div>
-    <button class="btn" id="load2">Convert your own library</button>
-  </div>
-  <details style="margin:0 0 4px"><summary>How do I export my library?</summary>
-    <ol class="steps">
-      <li><b>Fusion 360:</b> Manage → Tool Library → right-click your library → Export. Choose <code>.json</code> or <code>.tools</code>.</li>
-      <li><b>Vectric (VCarve/Aspire):</b> Tool Database → Export Tool Database as a <code>.vtdb</code> file. Older <code>.tool</code> files work too.</li>
-      <li>Load the file, tap <b>Add all shown</b> (or pick individual bits), then <b>Review &amp; download</b>. You can change feeds, speeds and depths per bit in the review screen.</li>
-    </ol>
-  </details>
   <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add file…</button></span></div>
   <div id="list"></div>
   <div style="text-align:center"><button class="btn ghost hide" id="more">Show more</button></div>
+  </section>
   <footer>
     <h3>Sources</h3>
     <p>Bit data comes from the tool libraries these vendors publish. Get the originals (and the latest versions) from them:</p>
@@ -135,7 +165,7 @@ footer ul{padding-left:18px;margin:6px 0}
   </footer>
 </div>
 
-<div class="dock"><div class="in">
+<div class="dock hide" id="dock"><div class="in">
   <span class="cnt" id="dockCount">No bits picked</span>
   <button class="btn" id="open">Review &amp; download</button>
 </div></div>
@@ -190,6 +220,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
+const initialHash = location.hash;
 let tools = CATALOG.slice();
 let byId = new Map();
 const picks = new Map();                       // key id|mat -> {id, mat}
@@ -397,7 +428,6 @@ $('#existing').addEventListener('change', async e => {
 
 /* ---------- user-supplied vendor files ---------- */
 $('#load').addEventListener('click', () => $('#vendorFile').click());
-$('#load2').addEventListener('click', () => $('#vendorFile').click());
 let sqlP;
 const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
   const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/', s = document.createElement('script');
@@ -426,10 +456,29 @@ $('#vendorFile').addEventListener('change', async e => {
   }
   if (total) {
     F.vendors = new Set(loaded); F.q = ''; F.types.clear(); F.mat = F.dia = F.shank = ''; $('#q').value = '';
-    reindex(); render(true); window.scrollTo({ top: 0, behavior: 'smooth' });
+    reindex(); render(true); showView('app');
     toast(`Loaded ${total} bits. Showing only those: tap "Add all shown" or pick individual bits.`, 7000);
   }
 });
+
+/* ---------- views ---------- */
+const VENDOR_LINKS = [['Bits & Bits', 'https://bitsbits.com'], ['SpeTool', 'https://spetools.com/pages/spetool-tool-file-database'], ['Amana Tool (Vectric library)', 'https://www.amanatool.com/view-amana-tool-vectric-library'], ['Whiteside Machine Company', 'https://www.whitesiderouterbits.com'], ['Cadence Mfg & Design', 'https://www.cadencemfgdesign.com/general-6']];
+$('#vendorLinks').innerHTML = VENDOR_LINKS.map(([n, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${n}</a></li>`).join('');
+function showView(v) {
+  $('#home').classList.toggle('hide', v !== 'home'); $('#app').classList.toggle('hide', v !== 'app'); $('#dock').classList.toggle('hide', v !== 'app');
+  document.querySelector('.sub').textContent = v === 'home' ? 'Convert tool libraries to MillMage, or pick bits from vendor lists, and download one .tools file.' : 'Search the list, tick the bits you own, download one .tools file for MillMage.';
+  window.scrollTo(0, 0);
+  if (v === 'home') {
+    $('#listCount').textContent = tools.length.toLocaleString();
+    $('#resume').classList.toggle('hide', !picks.size);
+    $('#resumeTxt').textContent = `You have ${picks.size} bit${picks.size === 1 ? '' : 's'} picked.`;
+  }
+}
+$('#c-own').addEventListener('click', () => $('#vendorFile').click());
+$('#c-vendor').addEventListener('click', () => $('#vendorFile').click());
+$('#c-list').addEventListener('click', () => showView('app'));
+$('#back').addEventListener('click', () => showView('home'));
+$('#resumeBtn').addEventListener('click', () => showView('app'));
 
 /* ---------- init ---------- */
 reindex();
@@ -440,6 +489,7 @@ try {
   if (m) history.replaceState(null, '', location.pathname + location.search);
 } catch {}
 updateDock(); render(true);
+showView(/#p=/.test(initialHash) ? 'app' : 'home');
 })();
 </script>
 </body>
