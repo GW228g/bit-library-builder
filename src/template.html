@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; form-action 'none'; base-uri 'none'">
 <title>Bit Library Builder</title>
 <style>
 :root{
@@ -73,6 +74,11 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
+.privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:14px;padding:12px 14px;margin:14px 0 0}
+.privacy .ic{font-size:1.4rem;line-height:1.2}
+.privacy b{color:var(--ok)}
+.privacy p{margin:2px 0 0;font-size:.88rem;color:var(--mute)}
+.lock{font-size:.82rem;color:var(--ok);font-weight:600;margin:0 0 10px}
 .choices{display:grid;gap:12px;margin:14px 0}
 .choice{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
 .choice h2{margin:0 0 6px;font-size:1.1rem}
@@ -107,10 +113,13 @@ footer ul{padding-left:18px;margin:6px 0}
 
   <section id="home">
     <div class="resume hide" id="resume"><span id="resumeTxt"></span><button class="btn sm" id="resumeBtn">Continue</button></div>
+    <div class="privacy"><span class="ic" aria-hidden="true">🔒</span><div><b>Your files never leave your device.</b>
+      <p>Everything happens in this browser tab. Files you add are read and converted on your own computer or phone, and nothing is uploaded, sent or stored on a server. There are no accounts and no tracking. Your picks are remembered only in this browser. The page is also locked by a browser security rule so it can't send data to any other website.</p></div></div>
     <div class="choices">
       <div class="choice">
         <h2>Convert my own library</h2>
         <p>Already have a Fusion 360 or Vectric tool library with your own feeds and speeds? Upload it and get a MillMage file. You can fine-tune any bit before you download.</p>
+        <p class="lock">🔒 Converted privately in your browser. Nothing is sent anywhere.</p>
         <button class="btn" id="c-own">Upload my library</button>
         <details><summary>How do I export my library?</summary>
           <ol class="steps">
@@ -122,6 +131,7 @@ footer ul{padding-left:18px;margin:6px 0}
       <div class="choice">
         <h2>Add vendor files to convert</h2>
         <p>Download a bit maker's tool library from their site, add it here, and pick the bits you own. Fusion 360 <code>.json</code>/<code>.tools</code> and Vectric <code>.vtdb</code>/<code>.tool</code> files work.</p>
+        <p class="lock">🔒 Same privacy: files stay on your device.</p>
         <button class="btn" id="c-vendor">Add vendor files</button>
         <details><summary>Where to download vendor libraries</summary>
           <ul class="steps" id="vendorLinks"></ul>
@@ -430,8 +440,8 @@ $('#existing').addEventListener('change', async e => {
 $('#load').addEventListener('click', () => $('#vendorFile').click());
 let sqlP;
 const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
-  const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/', s = document.createElement('script');
-  s.src = base + 'sql-wasm.js'; s.onerror = () => rej(new Error('Could not load the SQLite reader (offline?)'));
+  const base = 'vendor/', s = document.createElement('script');
+  s.src = base + 'sql-wasm.js'; s.onerror = () => rej(new Error('Could not load the SQLite reader (try reloading)'));
   s.onload = () => initSqlJs({ locateFile: f => base + f }).then(res, rej); document.head.appendChild(s);
 }));
 $('#vendorFile').addEventListener('change', async e => {
