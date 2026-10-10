@@ -1,5 +1,12 @@
 {
   "name": "millmage-bit-picker",
   "private": true,
-  "scripts": { "build": "node build.mjs" }
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
 }
