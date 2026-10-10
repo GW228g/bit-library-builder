@@ -139,7 +139,7 @@ footer ul{padding-left:18px;margin:6px 0}
   </header>
 
   <section id="home">
-    <div class="resume hide" id="resume"><span id="resumeTxt"></span><button class="btn sm" id="resumeBtn">Continue</button></div>
+    <div class="resume hide" id="resume"><span id="resumeTxt"></span><span style="display:flex;gap:8px;align-items:center"><button class="link" id="resumeClear">Clear</button><button class="btn sm" id="resumeBtn">Continue</button></span></div>
     <div class="privacy"><span class="ic" aria-hidden="true">🔒</span><div><b>Your files never leave your device.</b>
       <p>Everything happens in this browser tab. Files you add are read and converted on your own computer or phone, and nothing is uploaded, sent or stored on a server. There are no accounts and no tracking. Your picks are remembered only in this browser. The page is also locked by a browser security rule so it can't send data to any other website.</p></div></div>
     <div class="choices">
@@ -518,6 +518,7 @@ $('#c-vendor').addEventListener('click', () => $('#vendorFile').click());
 $('#c-list').addEventListener('click', () => showView('app'));
 $('#back').addEventListener('click', () => showView('home'));
 $('#resumeBtn').addEventListener('click', () => showView('app'));
+$('#resumeClear').addEventListener('click', () => { if (confirm(`Remove all ${picks.size} picked bits?`)) { picks.clear(); updateDock(); render(); showView('home'); } });
 
 /* ---------- init ---------- */
 reindex();
