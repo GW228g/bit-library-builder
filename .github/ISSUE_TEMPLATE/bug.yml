@@ -1,0 +1,23 @@
+name: Something is wrong
+description: A bit imported wrong, the file didn't work in MillMage, or the page misbehaved
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Please don't attach files you consider private. A description or a few example bits is enough."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Which bit(s) or file, and what you expected instead.
+    validations: { required: true }
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did the bit come from?
+      options: [Built-in list, My own Fusion 360 library, My own Vectric library, My own Carbide Create library, Other vendor file, Not sure]
+  - type: input
+    id: env
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPhone, Chrome on Windows

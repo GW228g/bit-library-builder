@@ -1,0 +1,9 @@
+name: Idea or feature request
+description: Something that would make the tool more useful
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+    validations: { required: true }

@@ -1,0 +1,17 @@
+name: Add a vendor or bit library
+description: Suggest a bit maker whose library should be built in
+labels: [vendor]
+body:
+  - type: input
+    id: vendor
+    attributes: { label: Vendor name }
+    validations: { required: true }
+  - type: input
+    id: link
+    attributes:
+      label: Link to their downloadable tool library
+      description: Fusion 360, Vectric or Carbide Create files work best.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
