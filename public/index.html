@@ -70,6 +70,10 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
+footer{margin:28px 0 8px;color:var(--mute);font-size:.85rem}
+footer h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px}
+footer a{color:var(--accent)}
+footer ul{padding-left:18px;margin:6px 0}
 </style>
 </head>
 <body>
@@ -91,6 +95,18 @@ summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
   <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add vendor file…</button></span></div>
   <div id="list"></div>
   <div style="text-align:center"><button class="btn ghost hide" id="more">Show more</button></div>
+  <footer>
+    <h3>Sources</h3>
+    <p>Bit data comes from the tool libraries these vendors publish. Get the originals (and the latest versions) from them:</p>
+    <ul>
+      <li><a href="https://bitsbits.com" target="_blank" rel="noopener">Bits &amp; Bits</a></li>
+      <li><a href="https://spetools.com/pages/spetool-tool-file-database" target="_blank" rel="noopener">SpeTool tool file database</a></li>
+      <li><a href="https://www.amanatool.com" target="_blank" rel="noopener">Amana Tool</a></li>
+      <li><a href="https://www.whitesiderouterbits.com" target="_blank" rel="noopener">Whiteside Machine Company</a></li>
+      <li>Cadence</li>
+    </ul>
+    <p>Not affiliated with or endorsed by these vendors, LightBurn or MillMage. Feeds and speeds are vendor starting points, so test in scrap first. Bits are converted automatically; spot-check anything important. <a href="https://github.com/GW228g/millmage-bit-picker" target="_blank" rel="noopener">Source on GitHub</a>.</p>
+  </footer>
 </div>
 
 <div class="dock"><div class="in">
