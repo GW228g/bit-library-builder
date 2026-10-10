@@ -7,6 +7,7 @@
     "preview": "wrangler dev"
   },
   "devDependencies": {
+    "sharp": "^0.35.5",
     "wrangler": "^4.149.0"
   },
   "dependencies": {
