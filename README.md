@@ -1,4 +1,4 @@
-# MillMage Bit Picker
+# Bit Library Builder
 
 Static web app: search vendor CNC bit libraries (Bits&Bits, SpeTool, Whiteside), pick the bits you own, download one MillMage `.tools` file.
 
