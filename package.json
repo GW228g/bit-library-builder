@@ -1,5 +1,5 @@
 {
-  "name": "millmage-bit-picker",
+  "name": "bit-library-builder",
   "private": true,
   "scripts": {
     "build": "node build.mjs",
