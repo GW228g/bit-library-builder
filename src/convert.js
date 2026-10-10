@@ -320,7 +320,7 @@ const Conv = (() => {
     const cat = opts.category && opts.category !== 'material' ? opts.category : p.mat === 'General' ? t.vendor : p.mat;   // no material given -> file under the vendor
     const sec = x => mm(x / 60);
     const shankNote = t.shank ? `Shank ${t.imperial ? t.shank / IN : t.shank}${t.imperial ? '"' : ' mm'}` : '';
-    const notes = [t.sku && `SKU ${t.sku}`, shankNote, `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
+    const notes = [t.sku && `SKU ${t.sku}`, shankNote, `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.custom ? 'custom speeds/feeds' : '', p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
       .filter(Boolean).join('. ') + '. Verify before cutting.';
     return {
       Category: cat,
@@ -351,8 +351,9 @@ const Conv = (() => {
   /* picks: [{tool, mat}] ; existing: parsed .tools object or null -> new .tools object */
   function buildLibrary(picks, opts = {}, existing = null) {
     const lib = existing ? JSON.parse(JSON.stringify(existing)) : {};
-    for (const { tool, mat } of picks) {
-      const p = tool.presets.find(x => x.mat === mat) || tool.presets[0];
+    for (const { tool, mat, ov } of picks) {
+      const base = tool.presets.find(x => x.mat === mat) || tool.presets[0];
+      const p = ov && Object.keys(ov).length ? { ...base, ...ov, custom: true } : base;
       const rec = toMillMage(tool, p, opts);
       (lib[rec.Category] = lib[rec.Category] || {})['{' + hash(tool.id + '|' + p.mat + '|' + rec.Category) + '}'] = rec;
     }
@@ -364,6 +365,6 @@ const Conv = (() => {
     return sorted;
   }
 
-  return { sniff, unzip, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, hash, TYPES };
+  return { sniff, unzip, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
 })();
 if (typeof module !== 'undefined') module.exports = Conv;

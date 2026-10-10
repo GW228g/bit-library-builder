@@ -73,6 +73,18 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
+.own{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px dashed var(--accent);border-radius:14px;padding:12px 14px;margin:6px 0 4px}
+.own p{margin:0;font-size:.85rem;color:var(--mute)}
+.own strong{display:block;color:var(--ink);font-size:.95rem}
+.own .btn{flex:none}
+.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:8px 0 4px}
+.edit label{font-size:.72rem;color:var(--mute);display:block;margin:0 0 2px 2px}
+.edit input{padding:8px 10px;min-height:40px}
+.edit .full{grid-column:1/-1;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.item{flex-wrap:wrap}
+.item .tools{display:flex;align-items:center}
+.cust{color:var(--accent);font-weight:600}
+
 footer{margin:28px 0 8px;color:var(--mute);font-size:.85rem}
 footer h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 6px}
 footer a{color:var(--accent)}
@@ -95,7 +107,18 @@ footer ul{padding-left:18px;margin:6px 0}
       <div><label for="shank">Shank size</label><select id="shank"></select></div>
     </div>
   </div>
-  <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add vendor file…</button></span></div>
+  <div class="own">
+    <div><strong>Have your own library?</strong><p>Convert a Fusion 360 or Vectric tool library, with your own feeds and speeds. Files stay on your device.</p></div>
+    <button class="btn" id="load2">Convert your own library</button>
+  </div>
+  <details style="margin:0 0 4px"><summary>How do I export my library?</summary>
+    <ol class="steps">
+      <li><b>Fusion 360:</b> Manage → Tool Library → right-click your library → Export. Choose <code>.json</code> or <code>.tools</code>.</li>
+      <li><b>Vectric (VCarve/Aspire):</b> Tool Database → Export Tool Database as a <code>.vtdb</code> file. Older <code>.tool</code> files work too.</li>
+      <li>Load the file, tap <b>Add all shown</b> (or pick individual bits), then <b>Review &amp; download</b>. You can change feeds, speeds and depths per bit in the review screen.</li>
+    </ol>
+  </details>
+  <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add file…</button></span></div>
   <div id="list"></div>
   <div style="text-align:center"><button class="btn ghost hide" id="more">Show more</button></div>
   <footer>
@@ -259,11 +282,25 @@ function updateDock() {
   $('#dockCount').textContent = n ? `${n} bit${n > 1 ? 's' : ''} picked` : 'No bits picked';
   store.set('bp.picks', [...picks.values()]);
 }
+const openEdit = new Set();
+const FIELDS = [['feed', 'Feed'], ['plunge', 'Plunge'], ['rpm', 'Spindle RPM'], ['down', 'Pass depth'], ['over', 'Step-over']];
+const unit = (t, f) => f === 'rpm' ? '' : (f === 'feed' || f === 'plunge') ? (t.imperial ? 'ipm' : 'mm/min') : (t.imperial ? 'in' : 'mm');
+const toDisp = (t, f, v) => f === 'rpm' ? Math.round(v) : (f === 'feed' || f === 'plunge') ? (t.imperial ? +(v / 25.4).toFixed(1) : Math.round(v)) : (t.imperial ? +(v / 25.4).toFixed(4) : +v.toFixed(2));
+const fromDisp = (t, f, v) => f === 'rpm' ? v : (t.imperial && f !== 'rpm' ? v * 25.4 : v);
+function effective(t, x) {
+  const p = t.presets.find(q => q.mat === x.mat) || t.presets[0], d = Conv.defaults(t), ov = x.ov || {};
+  return { feed: ov.feed ?? p.feed, plunge: ov.plunge ?? p.plunge, rpm: ov.rpm ?? p.rpm, down: ov.down ?? p.down ?? d.down, over: ov.over ?? p.over ?? d.over };
+}
 function renderSheet() {
-  const arr = [...picks.values()].map(x => ({ ...x, t: byId.get(x.id) })).filter(x => x.t);
+  const arr = [...picks.entries()].map(([key, x]) => ({ key, ...x, t: byId.get(x.id) })).filter(x => x.t);
   $('#shTitle').textContent = `Your bits (${arr.length})`;
-  $('#picked').innerHTML = arr.length ? arr.map(x => `<div class="item"><div class="n">${esc(x.t.name)}<small>${esc(x.mat)} · ${x.t.type} · ⌀ ${len(x.t, x.t.dia)}</small></div><button class="x" data-rm="${esc(x.id + '|' + x.mat)}" aria-label="Remove">×</button></div>`).join('')
-    : '<p class="help">Nothing yet. Close this and tap Add on the bits you own.</p>';
+  $('#picked').innerHTML = arr.length ? arr.map(x => {
+    const custom = x.ov && Object.keys(x.ov).length, open = openEdit.has(x.key), e = effective(x.t, x);
+    return `<div class="item"><div class="n">${esc(x.t.name)}<small>${esc(x.mat)} · ${x.t.type} · ⌀ ${len(x.t, x.t.dia)}${custom ? ' · <span class="cust">custom speeds</span>' : ''}</small></div>
+      <span class="tools"><button class="btn ghost sm" data-edit="${esc(x.key)}">${open ? 'Done' : 'Edit speeds'}</button><button class="x" data-rm="${esc(x.key)}" aria-label="Remove">×</button></span>
+      ${open ? `<div class="edit" style="width:100%">${FIELDS.map(([f, label]) => `<div><label>${label}${unit(x.t, f) ? ' (' + unit(x.t, f) + ')' : ''}</label><input type="number" step="any" inputmode="decimal" data-key="${esc(x.key)}" data-f="${f}" value="${toDisp(x.t, f, e[f])}"></div>`).join('')}
+        <div class="full"><span class="help">Your values replace the vendor's for this bit.</span><button class="link" data-reset="${esc(x.key)}">Reset to vendor</button></div></div>` : ''}</div>`;
+  }).join('') : '<p class="help">Nothing yet. Close this and tap Add on the bits you own.</p>';
   $('#dl').disabled = $('#share').disabled = !arr.length;
 }
 function opts() {
@@ -272,7 +309,7 @@ function opts() {
   return { category: one ? ($('#catName').value.trim() || 'My Bits') : 'material', maxRpm: r > 0 ? r : 0 };
 }
 function library() {
-  const arr = [...picks.values()].map(x => ({ tool: byId.get(x.id), mat: x.mat })).filter(x => x.tool);
+  const arr = [...picks.values()].map(x => ({ tool: byId.get(x.id), mat: x.mat, ov: x.ov })).filter(x => x.tool);
   return Conv.buildLibrary(arr, opts(), existingLib);
 }
 function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', ms); }
@@ -301,6 +338,10 @@ document.addEventListener('click', e => {
     updateDock(); const c = add.closest('.card'), on = picks.has(key);
     c.classList.toggle('added', on); add.classList.toggle('on', on); add.textContent = on ? '✓ Added' : 'Add'; return;
   }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { const k = ed.dataset.edit; openEdit.has(k) ? openEdit.delete(k) : openEdit.add(k); renderSheet(); return; }
+  const rs = e.target.closest('[data-reset]');
+  if (rs) { const x = picks.get(rs.dataset.reset); if (x) { delete x.ov; updateDock(); renderSheet(); } return; }
   const rm = e.target.closest('[data-rm]');
   if (rm) { picks.delete(rm.dataset.rm); updateDock(); renderSheet(); render(); }
 });
@@ -317,6 +358,18 @@ $('#open').addEventListener('click', () => openSheet(true));
 $('#close').addEventListener('click', () => openSheet(false));
 $('#bg').addEventListener('click', () => openSheet(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') openSheet(false); });
+$('#picked').addEventListener('input', e => {        // store only the values the user actually changed
+  const el = e.target.closest('input[data-f]'); if (!el) return;
+  const x = picks.get(el.dataset.key), t = x && byId.get(x.id); if (!t) return;
+  const v = parseFloat(el.value), f = el.dataset.f;
+  if (!(v > 0)) return;
+  const base = effective(t, { ...x, ov: null })[f], val = fromDisp(t, f, v);
+  x.ov = x.ov || {};
+  if (Math.abs(val - base) < base * 1e-4) delete x.ov[f]; else x.ov[f] = f === 'rpm' ? Math.round(val) : val;
+  if (!Object.keys(x.ov).length) delete x.ov;
+  store.set('bp.picks', [...picks.values()]);
+  const n = el.closest('.item').querySelector('small'); if (n) n.innerHTML = n.innerHTML.replace(/ · <span class="cust">.*?<\/span>/, '') + (x.ov ? ' · <span class="cust">custom speeds</span>' : '');
+});
 $('#clear').addEventListener('click', () => { if (picks.size && confirm('Remove all picked bits?')) { picks.clear(); updateDock(); renderSheet(); render(); } });
 
 $('#dl').addEventListener('click', () => {
@@ -328,7 +381,7 @@ $('#dl').addEventListener('click', () => {
   toast(`Saved ${Object.keys(lib).length} categories, ${n} tools`);
 });
 $('#share').addEventListener('click', async () => {
-  const ids = [...picks.values()].map(x => x.id + '|' + x.mat);
+  const ids = [...picks.values()];
   const url = location.href.split('#')[0] + '#p=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(ids)))));
   try { await navigator.clipboard.writeText(url); toast('Link copied — open it on your computer'); } catch { prompt('Copy this link:', url); }
 });
@@ -344,6 +397,7 @@ $('#existing').addEventListener('change', async e => {
 
 /* ---------- user-supplied vendor files ---------- */
 $('#load').addEventListener('click', () => $('#vendorFile').click());
+$('#load2').addEventListener('click', () => $('#vendorFile').click());
 let sqlP;
 const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
   const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/', s = document.createElement('script');
@@ -352,7 +406,7 @@ const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
 }));
 $('#vendorFile').addEventListener('change', async e => {
   const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
-  let total = 0;
+  let total = 0; const loaded = [];
   for (const f of files) {
     const src = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 30);
     try {
@@ -367,17 +421,21 @@ $('#vendorFile').addEventListener('change', async e => {
         else throw new Error("That's already a MillMage library. Use 'Add to an existing library' in the review screen instead.");
       } else if (kind === 'bin') added = Conv.fromVectricTool(buf, src);
       if (!added || !added.length) throw new Error('No usable bits found in ' + f.name);
-      tools = Conv.merge([tools, added]); total += added.length;
+      tools = Conv.merge([tools, added]); total += added.length; loaded.push(...new Set(added.map(t => t.vendor)));
     } catch (err) { toast(`${f.name}: ${err.message || 'could not read file'}`, 6000); }
   }
-  if (total) { reindex(); render(true); toast(`Added ${total} bits`); }
+  if (total) {
+    F.vendors = new Set(loaded); F.q = ''; F.types.clear(); F.mat = F.dia = F.shank = ''; $('#q').value = '';
+    reindex(); render(true); window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast(`Loaded ${total} bits. Showing only those: tap "Add all shown" or pick individual bits.`, 7000);
+  }
 });
 
 /* ---------- init ---------- */
 reindex();
 try {
   const m = location.hash.match(/#p=(.+)/);
-  const saved = m ? JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))).map(s => { const i = s.lastIndexOf('|'); return { id: s.slice(0, i), mat: s.slice(i + 1) }; }) : store.get('bp.picks', []);
+  const saved = m ? JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))).map(s => { if (typeof s !== 'string') return s; const i = s.lastIndexOf('|'); return { id: s.slice(0, i), mat: s.slice(i + 1) }; }) : store.get('bp.picks', []);
   saved.forEach(x => { const t = byId.get(x.id); if (t && t.presets.some(p => p.mat === x.mat)) picks.set(x.id + '|' + x.mat, x); });
   if (m) history.replaceState(null, '', location.pathname + location.search);
 } catch {}
