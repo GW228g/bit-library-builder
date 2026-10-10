@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>MillMage Bit Picker</title>
+<style>
+:root{
+  --bg:#f6f4ef; --card:#fff; --ink:#1d1b17; --mute:#6d675c; --line:#e3ded2; --accent:#b4530a; --accent-ink:#fff;
+  --chip:#ece7db; --ok:#2f7d4f; --shadow:0 1px 2px rgba(40,30,10,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#171613; --card:#211f1b; --ink:#f0ece3; --mute:#a39c8d; --line:#37332b; --accent:#e8873a; --accent-ink:#1a1206;
+  --chip:#2c2923; --ok:#6cc08a; --shadow:none;}}
+:root[data-theme=dark]{--bg:#171613; --card:#211f1b; --ink:#f0ece3; --mute:#a39c8d; --line:#37332b; --accent:#e8873a; --accent-ink:#1a1206; --chip:#2c2923; --ok:#6cc08a; --shadow:none;}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px}
+header{padding:18px 0 6px}
+h1{font-size:1.35rem;margin:0;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:.9rem;margin:2px 0 0}
+.bar{padding:10px 0 8px;border-bottom:1px solid var(--line)}
+.stick{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
+input[type=search],input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px}
+.filters{display:flex;gap:8px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:8px 13px;font:inherit;font-size:.9rem;min-height:40px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sel label{font-size:.75rem;color:var(--mute);display:block;margin:0 0 2px 2px}
+.meta{display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;color:var(--mute);font-size:.88rem}
+.link{background:none;border:0;color:var(--accent);font:inherit;padding:8px 0;cursor:pointer;min-height:40px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card.added{border-color:var(--accent)}
+.name{font-weight:600;overflow-wrap:anywhere}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tag{background:var(--chip);border-radius:6px;padding:2px 8px;font-size:.78rem;color:var(--mute)}
+.tag.t{color:var(--ink);font-weight:600}
+.row{display:flex;gap:10px;align-items:center;margin-top:8px}
+.row select{flex:1;min-width:0;padding:9px 10px;min-height:44px}
+.speeds{color:var(--mute);font-size:.82rem;margin-top:6px}
+.est{color:var(--accent)}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:10px 16px;min-height:44px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.on{background:transparent;color:var(--ok);border-color:var(--ok)}
+.btn.sm{padding:6px 12px;min-height:36px;font-weight:500}
+.empty{text-align:center;color:var(--mute);padding:40px 0}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.dock .in{max-width:900px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.dock .cnt{font-weight:600}
+.sheet{position:fixed;inset:0;z-index:20;display:none}
+.sheet.open{display:block}
+.sheet .bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:92dvh;overflow:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
+.panel h2{margin:0 0 4px;font-size:1.15rem}
+.panel h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:18px 0 6px}
+.item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.item .n{flex:1;min-width:0;font-size:.92rem;overflow-wrap:anywhere}
+.item .n small{display:block;color:var(--mute)}
+.x{border:0;background:none;color:var(--mute);font-size:1.4rem;line-height:1;width:44px;height:44px;cursor:pointer}
+.opt{display:flex;gap:10px;align-items:center;margin:6px 0}
+.opt input[type=radio]{width:20px;height:20px}
+.help{color:var(--mute);font-size:.82rem;margin:4px 0 0}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:30;font-size:.9rem;max-width:90vw;display:none}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.actions .btn{flex:1 1 140px}
+details{margin-top:14px}
+summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
+.steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>MillMage Bit Picker</h1>
+    <p class="sub">Search vendor bit libraries, tick the bits you own, download one <code>.tools</code> file for MillMage.</p>
+  </header>
+  <div class="stick"><input id="q" type="search" placeholder='Search: "1/4 down spiral", "60 v-bit", W06006…' autocomplete="off" enterkeyhint="search"></div>
+    <div class="bar">
+    <div class="filters" id="typeChips" role="group" aria-label="Bit type"></div>
+    <div class="filters" id="vendorChips" role="group" aria-label="Vendor"></div>
+    <div class="sel">
+      <div><label for="mat">Material</label><select id="mat"></select></div>
+      <div><label for="dia">Cutting diameter</label><select id="dia"></select></div>
+      <div><label for="shank">Shank size</label><select id="shank"></select></div>
+    </div>
+  </div>
+  <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add vendor file…</button></span></div>
+  <div id="list"></div>
+  <div style="text-align:center"><button class="btn ghost hide" id="more">Show more</button></div>
+</div>
+
+<div class="dock"><div class="in">
+  <span class="cnt" id="dockCount">No bits picked</span>
+  <button class="btn" id="open">Review &amp; download</button>
+</div></div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Your bits">
+  <div class="bg" id="bg"></div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="shTitle">Your bits</h2><button class="x" id="close" aria-label="Close">×</button></div>
+    <div id="picked"></div>
+
+    <h3>Organize</h3>
+    <label class="opt"><input type="radio" name="cat" value="material" checked> Category per material (Hardwood, Aluminum…)</label>
+    <label class="opt"><input type="radio" name="cat" value="one"> One category:</label>
+    <input type="text" id="catName" value="My Bits" aria-label="Category name">
+
+    <h3>Spindle limit (optional)</h3>
+    <input type="number" id="maxRpm" inputmode="numeric" placeholder="e.g. 12000 — leave empty for vendor speeds" min="1000" max="60000">
+    <p class="help">If a vendor speed is higher, RPM is capped and the feed rate is scaled down with it so chip load stays the same.</p>
+
+    <h3>Add to an existing library (optional)</h3>
+    <input type="file" id="existing" accept=".tools,.json,application/json">
+    <p class="help" id="existingNote">Pick your current .tools file and the new bits are merged into it instead of making a fresh file.</p>
+
+    <div class="actions">
+      <button class="btn" id="dl">Download .tools</button>
+      <button class="btn ghost" id="share">Copy link to this list</button>
+      <button class="btn ghost" id="clear">Clear all</button>
+    </div>
+    <details>
+      <summary>How to install in MillMage</summary>
+      <ol class="steps">
+        <li>Save the file into <code>Documents/MillMage/ToolLibraries</code> on your computer.</li>
+        <li>In MillMage open the Tool Library and choose it (or restart MillMage).</li>
+        <li>Check a few bits: vendor values are starting points, and some values (marked <span class="est">est.</span>) are estimated.</li>
+      </ol>
+    </details>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="vendorFile" class="hide" accept=".json,.vtdb,.tool">
+
+<script>
+/*CONVERT*/
+</script>
+<script>
+const CATALOG = /*CATALOG*/[];
+</script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+let tools = CATALOG.slice();
+let byId = new Map();
+const picks = new Map();                       // key id|mat -> {id, mat}
+const F = { q: '', types: new Set(), vendors: new Set(), mat: '', dia: '', shank: '' };
+let shown = 60, existingLib = null, existingName = '';
+const PAGE = 60;
+
+/* ---------- formatting ---------- */
+const inchStr = mm => {
+  const i = mm / 25.4, n = Math.round(i * 64);
+  if (Math.abs(i * 64 - n) < 0.05) {
+    let a = n, b = 64; while (a && a % 2 === 0) { a /= 2; b /= 2; }
+    const w = Math.floor(a / b), r = a - w * b;
+    return r ? (w ? `${w}-${r}/${b}` : `${r}/${b}`) + '"' : `${w}"`;
+  }
+  return (+i.toFixed(3)) + '"';
+};
+const len = (t, mm) => t.imperial ? inchStr(mm) : (+mm.toFixed(2)) + ' mm';
+const rate = (t, mmPerMin) => t.imperial ? Math.round(mmPerMin / 25.4) + ' ipm' : Math.round(mmPerMin) + ' mm/min';
+
+/* ---------- index ---------- */
+function reindex() {
+  tools.forEach(t => {
+    t._hay = [t.name, t.sku, t.vendor, t.type, t.cat, inchStr(t.dia), (t.dia / 25.4).toFixed(3).replace(/0+$/, ''), +t.dia.toFixed(2) + 'mm',
+      t.angle ? t.angle + 'deg ' + t.angle + '°' : ''].join(' ').toLowerCase().replace(/["”]/g, '');
+  });
+  byId = new Map(tools.map(t => [t.id, t]));
+  const order = Conv.TYPES;
+  tools.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || a.dia - b.dia || a.name.localeCompare(b.name));
+  const mats = [...new Set(tools.flatMap(t => t.presets.map(p => p.mat)))].sort();
+  $('#mat').innerHTML = '<option value="">Any material</option>' + mats.map(m => `<option>${esc(m)}</option>`).join('');
+  const dias = new Map(); tools.forEach(t => dias.set(+t.dia.toFixed(3), inchStr(t.dia) + (t.imperial ? '' : '')) );
+  const dl = [...dias.entries()].sort((a, b) => a[0] - b[0]);
+  $('#dia').innerHTML = '<option value="">Any diameter</option>' + dl.map(([mm, s]) => `<option value="${mm}">${s} (${+mm.toFixed(2)} mm)</option>`).join('');
+  const sh = new Map(); let unk = false;
+  tools.forEach(t => t.shank ? sh.set(+t.shank.toFixed(3), inchStr(t.shank) + ' · ' + +t.shank.toFixed(2) + ' mm') : unk = true);
+  $('#shank').innerHTML = '<option value="">Any shank</option>' + [...sh.entries()].sort((a, b) => a[0] - b[0]).map(([mm, s]) => `<option value="${mm}">${s}</option>`).join('') + (unk ? '<option value="?">Unknown</option>' : '');
+  $('#shank').value = F.shank;
+  const chips = (el, items, set, key) => {
+    el.innerHTML = items.map(x => `<button class="chip" data-k="${key}" data-v="${esc(x)}" aria-pressed="${set.has(x)}">${esc(x)}</button>`).join('');
+  };
+  chips($('#typeChips'), order.filter(t => tools.some(x => x.type === t)), F.types, 'types');
+  chips($('#vendorChips'), [...new Set(tools.map(t => t.vendor))].sort(), F.vendors, 'vendors');
+  $('#mat').value = F.mat; $('#dia').value = F.dia;
+}
+
+/* ---------- list ---------- */
+function filtered() {
+  const toks = F.q.toLowerCase().replace(/["”]/g, '').split(/\s+/).filter(Boolean);
+  return tools.filter(t =>
+    (!F.types.size || F.types.has(t.type)) && (!F.vendors.size || F.vendors.has(t.vendor)) &&
+    (!F.mat || t.presets.some(p => p.mat === F.mat)) && (!F.dia || Math.abs(t.dia - F.dia) < 0.002) &&
+    (!F.shank || (F.shank === '?' ? !t.shank : Math.abs(t.shank - F.shank) < 0.01)) &&
+    toks.every(w => t._hay.includes(w)));
+}
+const defaultPreset = t => t.presets.find(p => p.mat === F.mat) || t.presets[0];
+const presetFor = t => { const el = document.querySelector(`[data-sel="${CSS.escape(t.id)}"]`); return el ? el.value : defaultPreset(t).mat; };
+
+function card(t) {
+  const mat = defaultPreset(t).mat, p = t.presets.find(x => x.mat === mat);
+  const added = picks.has(t.id + '|' + mat);
+  const tags = [`<span class="tag t">${esc(t.type)}</span>`, `<span class="tag">⌀ ${len(t, t.dia)}</span>`];
+  if (t.angle) tags.push(`<span class="tag">${+t.angle.toFixed(2)}°</span>`);
+  if (t.shank) tags.push(`<span class="tag">shank ${len(t, t.shank)}</span>`);
+  if (t.tipDia) tags.push(`<span class="tag">tip ${len(t, t.tipDia)}</span>`);
+  if (t.radius) tags.push(`<span class="tag">R ${len(t, t.radius)}</span>`);
+  tags.push(`<span class="tag">${t.flutes} flute${t.flutes > 1 ? 's' : ''}</span>`, `<span class="tag">cut ${len(t, t.length)}${t.lenEst ? '<span class="est"> est.</span>' : ''}</span>`, `<span class="tag">${esc(t.vendor)}</span>`);
+  const opts = t.presets.map(x => `<option ${x.mat === mat ? 'selected' : ''}>${esc(x.mat)}</option>`).join('');
+  return `<div class="card ${added ? 'added' : ''}" data-id="${esc(t.id)}">
+    <div class="name">${esc(t.name)}</div>
+    <div class="tags">${tags.join('')}</div>
+    <div class="speeds">${rate(t, p.feed)} feed · ${rate(t, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm${p.down == null ? ' · <span class="est">depth/stepover est.</span>' : ''}</div>
+    <div class="row">${t.presets.length > 1 ? `<select data-sel="${esc(t.id)}" aria-label="Material">${opts}</select>` : `<span class="tag" style="flex:1">${esc(mat)}</span><input type="hidden" data-sel="${esc(t.id)}" value="${esc(mat)}">`}
+    <button class="btn ${added ? 'on' : ''}" data-add="${esc(t.id)}">${added ? '✓ Added' : 'Add'}</button></div></div>`;
+}
+
+function render(resetPage) {
+  if (resetPage) shown = PAGE;
+  const list = filtered();
+  $('#count').textContent = `${list.length} of ${tools.length} bits`;
+  $('#list').innerHTML = list.length ? list.slice(0, shown).map(card).join('') : '<div class="empty">No bits match. Try fewer filters.</div>';
+  $('#more').classList.toggle('hide', list.length <= shown);
+  $('#more').textContent = `Show more (${list.length - shown} left)`;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', F[c.dataset.k].has(c.dataset.v)));
+}
+
+/* ---------- picks ---------- */
+function updateDock() {
+  const n = picks.size;
+  $('#dockCount').textContent = n ? `${n} bit${n > 1 ? 's' : ''} picked` : 'No bits picked';
+  store.set('bp.picks', [...picks.values()]);
+}
+function renderSheet() {
+  const arr = [...picks.values()].map(x => ({ ...x, t: byId.get(x.id) })).filter(x => x.t);
+  $('#shTitle').textContent = `Your bits (${arr.length})`;
+  $('#picked').innerHTML = arr.length ? arr.map(x => `<div class="item"><div class="n">${esc(x.t.name)}<small>${esc(x.mat)} · ${x.t.type} · ⌀ ${len(x.t, x.t.dia)}</small></div><button class="x" data-rm="${esc(x.id + '|' + x.mat)}" aria-label="Remove">×</button></div>`).join('')
+    : '<p class="help">Nothing yet. Close this and tap Add on the bits you own.</p>';
+  $('#dl').disabled = $('#share').disabled = !arr.length;
+}
+function opts() {
+  const one = document.querySelector('input[name=cat]:checked').value === 'one';
+  const r = parseInt($('#maxRpm').value, 10);
+  return { category: one ? ($('#catName').value.trim() || 'My Bits') : 'material', maxRpm: r > 0 ? r : 0 };
+}
+function library() {
+  const arr = [...picks.values()].map(x => ({ tool: byId.get(x.id), mat: x.mat })).filter(x => x.tool);
+  return Conv.buildLibrary(arr, opts(), existingLib);
+}
+function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', ms); }
+
+/* ---------- events ---------- */
+let qTimer;
+$('#q').addEventListener('input', e => { clearTimeout(qTimer); qTimer = setTimeout(() => { F.q = e.target.value; render(true); }, 120); });
+$('#mat').addEventListener('change', e => { F.mat = e.target.value; render(true); });
+$('#dia').addEventListener('change', e => { F.dia = e.target.value; render(true); });
+$('#shank').addEventListener('change', e => { F.shank = e.target.value; render(true); });
+$('#reset').addEventListener('click', () => { F.q = ''; F.mat = F.dia = F.shank = ''; F.types.clear(); F.vendors.clear(); $('#q').value = ''; $('#mat').value = ''; $('#dia').value = ''; $('#shank').value = ''; render(true); });
+$('#addAll').addEventListener('click', () => {
+  const list = filtered(); if (!list.length) return;
+  if (list.length > 40 && !confirm(`Add all ${list.length} shown bits?`)) return;
+  list.forEach(t => { const m = defaultPreset(t).mat; picks.set(t.id + '|' + m, { id: t.id, mat: m }); });
+  updateDock(); render(); toast(`Added ${list.length} bits`);
+});
+$('#more').addEventListener('click', () => { shown += PAGE; render(); });
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (chip) { const s = F[chip.dataset.k], v = chip.dataset.v; s.has(v) ? s.delete(v) : s.add(v); render(true); return; }
+  const add = e.target.closest('[data-add]');
+  if (add) {
+    const t = byId.get(add.dataset.add), mat = presetFor(t), key = t.id + '|' + mat;
+    picks.has(key) ? picks.delete(key) : picks.set(key, { id: t.id, mat });
+    updateDock(); const c = add.closest('.card'), on = picks.has(key);
+    c.classList.toggle('added', on); add.classList.toggle('on', on); add.textContent = on ? '✓ Added' : 'Add'; return;
+  }
+  const rm = e.target.closest('[data-rm]');
+  if (rm) { picks.delete(rm.dataset.rm); updateDock(); renderSheet(); render(); }
+});
+$('#list').addEventListener('change', e => {            // switching material on a card re-renders just that card
+  const sel = e.target.closest('select[data-sel]'); if (!sel) return;
+  const t = byId.get(sel.dataset.sel), c = sel.closest('.card'), p = t.presets.find(x => x.mat === sel.value), key = t.id + '|' + sel.value;
+  const added = picks.has(key);
+  c.classList.toggle('added', added);
+  const b = c.querySelector('[data-add]'); b.classList.toggle('on', added); b.textContent = added ? '✓ Added' : 'Add';
+  c.querySelector('.speeds').innerHTML = `${rate(t, p.feed)} feed · ${rate(t, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm${p.down == null ? ' · <span class="est">depth/stepover est.</span>' : ''}`;
+});
+const openSheet = v => { if (v) renderSheet(); $('#sheet').classList.toggle('open', v); document.body.style.overflow = v ? 'hidden' : ''; };
+$('#open').addEventListener('click', () => openSheet(true));
+$('#close').addEventListener('click', () => openSheet(false));
+$('#bg').addEventListener('click', () => openSheet(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') openSheet(false); });
+$('#clear').addEventListener('click', () => { if (picks.size && confirm('Remove all picked bits?')) { picks.clear(); updateDock(); renderSheet(); render(); } });
+
+$('#dl').addEventListener('click', () => {
+  const lib = library(), n = Object.values(lib).reduce((a, c) => a + Object.keys(c).length, 0);
+  const blob = new Blob([JSON.stringify(lib, null, 4) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = existingName || 'MillMage Picked Bits.tools';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(`Saved ${Object.keys(lib).length} categories, ${n} tools`);
+});
+$('#share').addEventListener('click', async () => {
+  const ids = [...picks.values()].map(x => x.id + '|' + x.mat);
+  const url = location.href.split('#')[0] + '#p=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(ids)))));
+  try { await navigator.clipboard.writeText(url); toast('Link copied — open it on your computer'); } catch { prompt('Copy this link:', url); }
+});
+$('#existing').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) { existingLib = null; existingName = ''; return; }
+  try {
+    const j = JSON.parse(await f.text());
+    if (!j || typeof j !== 'object' || Array.isArray(j) || !Object.values(j).every(v => v && typeof v === 'object')) throw 0;
+    existingLib = j; existingName = f.name;
+    $('#existingNote').textContent = `Merging into ${f.name} (${Object.values(j).reduce((a, c) => a + Object.keys(c).length, 0)} existing tools). Download will use the same file name.`;
+  } catch { existingLib = null; existingName = ''; e.target.value = ''; toast("That doesn't look like a MillMage .tools file"); }
+});
+
+/* ---------- user-supplied vendor files ---------- */
+$('#load').addEventListener('click', () => $('#vendorFile').click());
+let sqlP;
+const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
+  const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/', s = document.createElement('script');
+  s.src = base + 'sql-wasm.js'; s.onerror = () => rej(new Error('Could not load the SQLite reader (offline?)'));
+  s.onload = () => initSqlJs({ locateFile: f => base + f }).then(res, rej); document.head.appendChild(s);
+}));
+$('#vendorFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const src = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 30);
+  try {
+    let added;
+    if (/\.vtdb$/i.test(f.name)) {
+      const SQL = await sqlJs(), db = new SQL.Database(new Uint8Array(await f.arrayBuffer()));
+      added = Conv.fromVectricDb(sql => { const r = db.exec(sql)[0]; return r ? r.values.map(v => Object.fromEntries(r.columns.map((c, i) => [c, v[i]]))) : []; }, src);
+    } else if (/\.json$/i.test(f.name)) added = Conv.fromFusion(JSON.parse(await f.text()), src);
+    else if (/\.tool$/i.test(f.name)) added = Conv.fromVectricTool(await f.arrayBuffer(), src);
+    else throw new Error('Use a Fusion .json, Vectric .vtdb or .tool file');
+    if (!added.length) throw new Error('No usable bits found in that file');
+    tools = Conv.merge([tools, added]); reindex(); render(true); toast(`Added ${added.length} bits from ${f.name}`);
+  } catch (err) { toast(err.message || 'Could not read that file', 5000); }
+});
+
+/* ---------- init ---------- */
+reindex();
+try {
+  const m = location.hash.match(/#p=(.+)/);
+  const saved = m ? JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))).map(s => { const i = s.lastIndexOf('|'); return { id: s.slice(0, i), mat: s.slice(i + 1) }; }) : store.get('bp.picks', []);
+  saved.forEach(x => { const t = byId.get(x.id); if (t && t.presets.some(p => p.mat === x.mat)) picks.set(x.id + '|' + x.mat, x); });
+  if (m) history.replaceState(null, '', location.pathname + location.search);
+} catch {}
+updateDock(); render(true);
+})();
+</script>
+</body>
+</html>
