@@ -6,12 +6,13 @@ const vt = (file, src, o) => {
   const db = new DatabaseSync(file, { readOnly: true });
   return Conv.fromVectricDb(sql => db.prepare(sql).all().map(r => ({ ...r })), src, o);
 };
+const zipJson = async f => JSON.parse(new TextDecoder().decode(await Conv.unzip(fs.readFileSync(f))));
 const lists = [
   vt('vendor-files/bitsbits-vectric.vtdb', 'Bits&Bits', { fileMaterial: true }),
   Conv.fromFusion(JSON.parse(fs.readFileSync('vendor-files/bitsbits-fusion.json')), 'Bits&Bits'),
   vt('vendor-files/spetool-vectric.vtdb', 'SpeTool'),
   vt('vendor-files/amana-vectric.vtdb', 'Amana Tool'),
-  vt('vendor-files/cadence-vectric.vtdb', 'Cadence', { fileMaterial: true }),
+  Conv.fromFusion(await zipJson('vendor-files/cadence-fusion.tools'), 'Cadence'),
   Conv.fromVectricTool(fs.readFileSync('vendor-files/whiteside.tool'), 'Whiteside'),
 ];
 lists.forEach(l => console.log(l.length, l[0]?.src));

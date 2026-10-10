@@ -101,9 +101,9 @@ footer ul{padding-left:18px;margin:6px 0}
     <ul>
       <li><a href="https://bitsbits.com" target="_blank" rel="noopener">Bits &amp; Bits</a></li>
       <li><a href="https://spetools.com/pages/spetool-tool-file-database" target="_blank" rel="noopener">SpeTool tool file database</a></li>
-      <li><a href="https://www.amanatool.com" target="_blank" rel="noopener">Amana Tool</a></li>
+      <li><a href="https://www.amanatool.com/view-amana-tool-vectric-library" target="_blank" rel="noopener">Amana Tool Vectric library</a></li>
       <li><a href="https://www.whitesiderouterbits.com" target="_blank" rel="noopener">Whiteside Machine Company</a></li>
-      <li>Cadence</li>
+      <li><a href="https://www.cadencemfgdesign.com/general-6" target="_blank" rel="noopener">Cadence Mfg &amp; Design</a></li>
     </ul>
     <p>Not affiliated with or endorsed by these vendors, LightBurn or MillMage. Feeds and speeds are vendor starting points, so test in scrap first. Bits are converted automatically; spot-check anything important. <a href="https://github.com/GW228g/millmage-bit-picker" target="_blank" rel="noopener">Source on GitHub</a>.</p>
   </footer>
@@ -149,7 +149,7 @@ footer ul{padding-left:18px;margin:6px 0}
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<input type="file" id="vendorFile" class="hide" accept=".json,.vtdb,.tool">
+<input type="file" id="vendorFile" class="hide" multiple>
 
 <script>
 /*CONVERT*/
@@ -348,19 +348,26 @@ const sqlJs = () => sqlP || (sqlP = new Promise((res, rej) => {
   s.onload = () => initSqlJs({ locateFile: f => base + f }).then(res, rej); document.head.appendChild(s);
 }));
 $('#vendorFile').addEventListener('change', async e => {
-  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  const src = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 30);
-  try {
-    let added;
-    if (/\.vtdb$/i.test(f.name)) {
-      const SQL = await sqlJs(), db = new SQL.Database(new Uint8Array(await f.arrayBuffer()));
-      added = Conv.fromVectricDb(sql => { const r = db.exec(sql)[0]; return r ? r.values.map(v => Object.fromEntries(r.columns.map((c, i) => [c, v[i]]))) : []; }, src);
-    } else if (/\.json$/i.test(f.name)) added = Conv.fromFusion(JSON.parse(await f.text()), src);
-    else if (/\.tool$/i.test(f.name)) added = Conv.fromVectricTool(await f.arrayBuffer(), src);
-    else throw new Error('Use a Fusion .json, Vectric .vtdb or .tool file');
-    if (!added.length) throw new Error('No usable bits found in that file');
-    tools = Conv.merge([tools, added]); reindex(); render(true); toast(`Added ${added.length} bits from ${f.name}`);
-  } catch (err) { toast(err.message || 'Could not read that file', 5000); }
+  const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+  let total = 0;
+  for (const f of files) {
+    const src = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').slice(0, 30);
+    try {
+      let buf = new Uint8Array(await f.arrayBuffer()), kind = Conv.sniff(buf), added;
+      if (kind === 'zip') { buf = await Conv.unzip(buf); kind = Conv.sniff(buf); }   // Fusion .tools = zipped tools.json
+      if (kind === 'sqlite') {
+        const SQL = await sqlJs(), db = new SQL.Database(buf);
+        added = Conv.fromVectricDb(sql => { const r = db.exec(sql)[0]; return r ? r.values.map(v => Object.fromEntries(r.columns.map((c, i) => [c, v[i]]))) : []; }, src);
+      } else if (kind === 'json') {
+        const j = JSON.parse(new TextDecoder().decode(buf));
+        if (Array.isArray(j.data)) added = Conv.fromFusion(j, src);
+        else throw new Error("That's already a MillMage library. Use 'Add to an existing library' in the review screen instead.");
+      } else if (kind === 'bin') added = Conv.fromVectricTool(buf, src);
+      if (!added || !added.length) throw new Error('No usable bits found in ' + f.name);
+      tools = Conv.merge([tools, added]); total += added.length;
+    } catch (err) { toast(`${f.name}: ${err.message || 'could not read file'}`, 6000); }
+  }
+  if (total) { reindex(); render(true); toast(`Added ${total} bits`); }
 });
 
 /* ---------- init ---------- */

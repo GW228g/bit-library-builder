@@ -95,7 +95,7 @@ const Conv = (() => {
       const D = (g.DC || 0) * k;
       const tool = {
         id: 'f:' + t.guid, vendor: src, sku: t['product-id'] || '',
-        name: clean(t.description), url: t['product-link'] || '', src, imperial: t.unit !== 'millimeters',
+        name: clean(t.description), url: /^https?:\/\//.test(t['product-link'] || '') ? t['product-link'] : '', src, imperial: t.unit !== 'millimeters',
         flutes: g.NOF || 2, length: (g.LCF || 0) * k, shank: (g.SFDM || 0) * k, notes: '', presets: [],
         dia: D, angle: 0, tipDia: 0, radius: 0,
       };
@@ -122,7 +122,8 @@ const Conv = (() => {
       for (const p of (t['start-values'] || {}).presets || []) {
         tool.presets.push({
           mat: material(p.name), feed: p.v_f * k, plunge: (p.v_f_plunge || p.v_f * .5) * k,
-          ramp: (p.v_f_ramp || 0) * k || null, rpm: Math.round(p.n), down: null, over: null,
+          ramp: (p.v_f_ramp || 0) * k || null, rpm: Math.round(p.n),
+          down: p['use-stepdown'] && p.stepdown > 0 ? p.stepdown * k : null, over: p['use-stepover'] && p.stepover > 0 ? p.stepover * k : null,
         });
       }
       out.push(finish(tool));
@@ -248,6 +249,38 @@ const Conv = (() => {
     return out;
   }
 
+  /* ---------- file sniffing / zip ---------- */
+  function sniff(buf) {
+    const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    if (u[0] === 0x50 && u[1] === 0x4b) return 'zip';
+    if (String.fromCharCode(...u.slice(0, 15)) === 'SQLite format 3') return 'sqlite';
+    const head = new TextDecoder().decode(u.slice(0, 64)).trim();
+    return head[0] === '{' || head[0] === '[' ? 'json' : 'bin';
+  }
+
+  /* first entry matching `pick` in a .zip (stored or deflate) -> Uint8Array */
+  async function unzip(buf, pick = /\.json$/i) {
+    const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf), dv = new DataView(u.buffer, u.byteOffset, u.byteLength);
+    let e = u.length - 22;
+    while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error('Not a valid zip file');
+    let off = dv.getUint32(e + 16, true);
+    for (let n = dv.getUint16(e + 10, true); n > 0; n--) {
+      if (dv.getUint32(off, true) !== 0x02014b50) break;
+      const method = dv.getUint16(off + 10, true), csize = dv.getUint32(off + 20, true), nl = dv.getUint16(off + 28, true),
+        xl = dv.getUint16(off + 30, true), cl = dv.getUint16(off + 32, true), lo = dv.getUint32(off + 42, true);
+      const name = new TextDecoder().decode(u.slice(off + 46, off + 46 + nl));
+      off += 46 + nl + xl + cl;
+      if (!pick.test(name)) continue;
+      const start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), data = u.slice(start, start + csize);
+      if (method === 0) return data;
+      if (method !== 8) throw new Error('Unsupported zip compression');
+      const out = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return new Uint8Array(await new Response(out).arrayBuffer());
+    }
+    throw new Error('No tool data found inside that zip');
+  }
+
   /* ---------- merge / dedupe ---------- */
   function merge(lists) {
     const all = [].concat(...lists).filter(t => !(t.type === 'Round-over' && !t.radius)), bySku = new Map(), res = [];
@@ -331,6 +364,6 @@ const Conv = (() => {
     return sorted;
   }
 
-  return { fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, hash, TYPES };
+  return { sniff, unzip, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, hash, TYPES };
 })();
 if (typeof module !== 'undefined') module.exports = Conv;
