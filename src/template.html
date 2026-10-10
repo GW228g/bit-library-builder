@@ -104,7 +104,7 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
-.privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:var(--r);padding:12px 14px;margin:14px 0 0}
+.privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:var(--r);padding:14px 16px;margin:0 0 14px}
 .privacy .ic{font-size:1.4rem;line-height:1.2}
 .privacy b{color:var(--ok)}
 .privacy p{margin:2px 0 0;font-size:.88rem;color:var(--mute)}
@@ -156,8 +156,6 @@ footer ul{padding-left:18px;margin:6px 0}
 
   <section id="home">
     <div class="resume hide" id="resume"><span id="resumeTxt"></span><span style="display:flex;gap:8px;align-items:center"><button class="link" id="resumeClear">Clear</button><button class="btn sm" id="resumeBtn">Continue</button></span></div>
-    <div class="privacy"><span class="ic" aria-hidden="true">🔒</span><div><b>Your files never leave your device.</b>
-      <p>Everything happens in this browser tab. Files you add are read and converted on your own computer or phone, and nothing is uploaded, sent or stored on a server. There are no accounts and no tracking. Your picks are remembered only in this browser. The page is also locked by a browser security rule so it can't send data to any other website.</p></div></div>
     <div class="choices">
       <div class="choice">
         <h2>Convert my own library</h2>
@@ -187,6 +185,8 @@ footer ul{padding-left:18px;margin:6px 0}
         <button class="btn" id="c-list">Browse the list</button>
       </div>
     </div>
+    <div class="privacy"><span class="ic" aria-hidden="true">🔒</span><div><b>Your files never leave your device.</b>
+      <p>Everything happens in this browser tab. Files you add are read and converted on your own computer or phone, and nothing is uploaded, sent or stored on a server. There are no accounts and no tracking. Your picks are remembered only in this browser. The page is also locked by a browser security rule so it can't send data to any other website.</p></div></div>
   </section>
 
   <section id="app" class="hide">
