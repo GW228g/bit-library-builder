@@ -25,7 +25,7 @@ const Conv = (() => {
 
   /* "<len> Cutting Length" / "<len> CL" out of a vendor name -> mm, or null */
   function lengthFromName(name, imperial) {
-    const m = name.match(new RegExp(NUM + String.raw`\s*(mm|"|in\b)?\s*(?:cutting\s*length|cut\s*length|CL\b)`, 'i'));
+    const m = name.match(new RegExp(NUM + String.raw`\s*(mm|"|in\b)?\s*(?:cutting\s*length|cut\s*length|CL\b|CH\b)`, 'i'));
     if (!m) return null;
     const v = num(m[1]);
     if (!(v > 0)) return null;
@@ -35,7 +35,7 @@ const Conv = (() => {
 
   /* "... x 1/4" Shank", "6mm Shank", "SD 1/4", "Shank 6mm" -> mm or null */
   function shankFromText(text, imperial) {
-    const m = text.match(new RegExp(NUM + String.raw`\s*(mm|"|in\b)?\s*(?:shank|SD\b)`, 'i')) || text.match(new RegExp(String.raw`shank\s*(?:dia\w*\s*)?` + NUM + String.raw`\s*(mm|"|in\b)?`, 'i'));
+    const m = text.match(new RegExp(NUM + String.raw`\s*(mm|"|in\b)?\s*(?:shank|shk\b|SD\b)`, 'i')) || text.match(new RegExp(String.raw`shank\s*(?:dia\w*\s*)?` + NUM + String.raw`\s*(mm|"|in\b)?`, 'i'));
     if (!m) return null;
     const v = num(m[1]); if (!(v > 0)) return null;
     return (m[2] || (imperial ? '"' : 'mm')).toLowerCase() === 'mm' ? v : v * IN;
@@ -132,7 +132,7 @@ const Conv = (() => {
 
   /* ---------- Vectric .vtdb (SQLite) ----------  q(sql) -> array of row objects */
   const VT_CAT_SKIP = /\bset$|\bkit\b/i;
-  function fromVectricDb(q, src) {
+  function fromVectricDb(q, src, o = {}) {
     const tree = new Map(q('select * from tool_tree_entry').map(r => [r.id, r]));
     const mats = new Map(q('select * from material').map(r => [r.id, r.name]));
     const treeByGeom = new Map();
@@ -148,20 +148,22 @@ const Conv = (() => {
     const byKey = new Map();
     for (const g of q('select * from tool_geometry')) {
       const rows = cut.get(g.id);
-      if (!rows || ![0, 1, 2, 3, 4, 5].includes(g.tool_type)) continue;
+      if (!rows || ![0, 1, 2, 3, 4, 5, 8].includes(g.tool_type)) continue;
       const imperial = g.units === 1, k = imperial ? IN : 1;
       const name = clean(g.name_format);
-      const skuM = name.match(/\b[A-Z]{1,2}\d{4,6}\b/) || name.match(/ - ([\w.-]+)\s*$/);
+      const skuM = name.match(/^#\s*([A-Za-z0-9-]+)/) || name.match(/\b[A-Z]{1,2}\d{4,6}\b/) || name.match(/ - ([\w.-]+)\s*$/);
       let sku = skuM ? (skuM[1] || skuM[0]) : '';
       const path = pathOf(treeByGeom.get(g.id)).slice(0, -1);
       let ci = path.findIndex(n => /imperial|metric/i.test(n)); ci = ci >= 0 ? ci + 1 : 1;
       let cat = path[ci] || 'Bits', treeMat = '';
-      const rest = path.slice(ci + 1);
-      for (const n of rest) if (!/shank/i.test(n)) treeMat = n;
+      let rest = path.slice(ci + 1);
+      if (rest[0] && !/shank/i.test(rest[0]) && material(rest[0]) === 'General' && !/general/i.test(rest[0])) { cat = rest[0]; rest = rest.slice(1); }   // sub-category folder (e.g. Endmill / Ballnose)
+      treeMat = rest.find(n => !/shank/i.test(n) && material(n) !== 'General') || '';
       if (VT_CAT_SKIP.test(cat)) cat = '';
+      if (/dovetail|t-slot|keyhole|mortis|sander|core box|countersink|rabbet/i.test(cat + ' ' + name)) continue;   // profile bits MillMage can't model
       const shanks = rest.map(n => /shank/i.test(n) && shankFromText(n, imperial)).filter(Boolean);
       const tool = {
-        id: 'v:' + g.id, vendor: '', sku, name: name.replace(/^SpeTool\s+/i, '').replace(/^SPE\s*/i, ''), url: '', src, imperial,
+        id: 'v:' + g.id, vendor: '', sku, name: name.replace(/^SpeTool\s+/i, '').replace(/^SPE\s*/i, '').replace(/^#\s*/, ''), url: '', src, imperial,
         flutes: g.num_flutes || 2, angle: 0, tipDia: 0, radius: 0, notes: '', presets: [],
         dia: g.diameter * k, length: lengthFromName(name, imperial) || (g.flute_length || 0) * k, cat,
         shank: shankFromText(name, imperial) || (shanks.length === 1 ? shanks[0] : 0),
@@ -175,6 +177,11 @@ const Conv = (() => {
           if (g.flat_diameter > 0) { tool.type = 'Tapered End Mill'; tool.tipDia = g.flat_diameter * k; }
           else tool.type = 'V-Bit';
           break;
+        case 8: {   // form tools: keep only the V-groove / engraving ones, whose angle is in the name
+          const am = name.match(/(\d+(?:\.\d+)?)\s*(?:°|deg)/i);
+          if (!am || !/v[\s-]*groove|engrav|chamfer/i.test(name)) continue;
+          tool.type = 'V-Bit'; tool.angle = +am[1]; break;
+        }
         case 5: tool.type = 'Tapered Ball Mill'; tool.angle = g.included_angle || 0; tool.radius = (g.tip_radius || 0) * k; break;
       }
       if (/round\s*over|roundover/i.test(cat + ' ' + name)) { tool.type = 'Round-over'; tool.radius = tool.radius || 0; }
@@ -183,18 +190,17 @@ const Conv = (() => {
       for (const c of rows) {
         const f = RATE[c.rate_units] || 1, lk = c.length_units === 1 ? IN : 1;
         tool.presets.push({
-          mat: material(treeMat, mats.get(c.mid)), feed: c.feed_rate * f, plunge: (c.plunge_rate || c.feed_rate * .5) * f,
+          mat: material(treeMat, o.fileMaterial || mats.size > 1 ? mats.get(c.mid) : ''), feed: c.feed_rate * f, plunge: (c.plunge_rate || c.feed_rate * .5) * f,
           ramp: null, rpm: Math.round(c.spindle_speed), down: c.stepdown ? c.stepdown * lk : null, over: c.stepover ? c.stepover * lk : null,
         });
       }
-      tool.vendorHint = /bits/i.test(src) ? 'Bits&Bits' : /spe/i.test(src) ? 'SpeTool' : '';
       // same physical bit listed once per material in some vendor files -> one tool, many presets
       const key = (sku ? sku.toLowerCase() : tool.name.toLowerCase()) + '|' + r4(tool.dia) + '|' + tool.angle + '|' + tool.type;
       const ex = byKey.get(key);
       if (ex) { for (const p of tool.presets) if (!ex.presets.some(e => e.mat === p.mat)) ex.presets.push(p); }
       else byKey.set(key, tool);
     }
-    return [...byKey.values()].map(t => { t.vendor = t.vendorHint || src; delete t.vendorHint; return finish(t); });
+    return [...byKey.values()].map(t => { t.vendor = src; return finish(t); });
   }
 
   /* ---------- Vectric legacy binary .tool (MFC archive) ---------- */

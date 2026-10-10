@@ -2,14 +2,16 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 const Conv = createRequire(import.meta.url)('./src/convert.js');
-const vt = (file, src) => {
+const vt = (file, src, o) => {
   const db = new DatabaseSync(file, { readOnly: true });
-  return Conv.fromVectricDb(sql => db.prepare(sql).all().map(r => ({ ...r })), src);
+  return Conv.fromVectricDb(sql => db.prepare(sql).all().map(r => ({ ...r })), src, o);
 };
 const lists = [
-  vt('vendor-files/bitsbits-vectric.vtdb', 'Bits&Bits'),
+  vt('vendor-files/bitsbits-vectric.vtdb', 'Bits&Bits', { fileMaterial: true }),
   Conv.fromFusion(JSON.parse(fs.readFileSync('vendor-files/bitsbits-fusion.json')), 'Bits&Bits'),
   vt('vendor-files/spetool-vectric.vtdb', 'SpeTool'),
+  vt('vendor-files/amana-vectric.vtdb', 'Amana Tool'),
+  vt('vendor-files/cadence-vectric.vtdb', 'Cadence', { fileMaterial: true }),
   Conv.fromVectricTool(fs.readFileSync('vendor-files/whiteside.tool'), 'Whiteside'),
 ];
 lists.forEach(l => console.log(l.length, l[0]?.src));
