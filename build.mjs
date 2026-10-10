@@ -21,7 +21,8 @@ console.log('merged', tools.length);
 
 const tpl = fs.readFileSync('src/template.html', 'utf8');
 if (tpl) {
-  const html = tpl.replace('/*CONVERT*/', () => fs.readFileSync('src/convert.js', 'utf8'))
+  const html = tpl.replace('/*FONTS*/', () => fs.readFileSync('src/fonts.css', 'utf8'))
+                  .replace('/*CONVERT*/', () => fs.readFileSync('src/convert.js', 'utf8'))
                   .replace('/*CATALOG*/[]', () => JSON.stringify(tools).replace(/</g, '\\u003c'));
   fs.writeFileSync('public/index.html', html);
   console.log('index.html', (html.length / 1024).toFixed(0) + ' KB');

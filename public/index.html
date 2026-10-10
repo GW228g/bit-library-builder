@@ -4,36 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data:; connect-src 'self'; form-action 'none'; base-uri 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'none'; base-uri 'none'">
 <title>Bit Library Builder</title>
 <style>
+@font-face{font-family:'Inter';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:500 800;font-display:swap;src:url(fonts/jakarta-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
 :root{
-  --bg:#f6f4ef; --card:#fff; --ink:#1d1b17; --mute:#6d675c; --line:#e3ded2; --accent:#b4530a; --accent-ink:#fff;
-  --chip:#ece7db; --ok:#2f7d4f; --shadow:0 1px 2px rgba(40,30,10,.08);
+  --bg:#fbf9f8; --card:#fff; --ink:#1b1c1c; --mute:#575d66; --line:#e7e4e3; --accent:#0051ac; --accent2:#1469d5; --accent-ink:#fff;
+  --chip:#efeded; --ok:#1f7a4d; --warn:#a85a00; --gold:#f6c33a; --glow:rgba(20,105,213,.08);
+  --shadow:0 12px 32px rgba(27,28,28,.06); --r:1.25rem; --head:"Plus Jakarta Sans",system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
-  --bg:#171613; --card:#211f1b; --ink:#f0ece3; --mute:#a39c8d; --line:#37332b; --accent:#e8873a; --accent-ink:#1a1206;
-  --chip:#2c2923; --ok:#6cc08a; --shadow:none;}}
-:root[data-theme=dark]{--bg:#171613; --card:#211f1b; --ink:#f0ece3; --mute:#a39c8d; --line:#37332b; --accent:#e8873a; --accent-ink:#1a1206; --chip:#2c2923; --ok:#6cc08a; --shadow:none;}
+  --bg:#0f1218; --card:#171c25; --ink:#eef0f4; --mute:#a3a9b5; --line:#28303b; --accent:#6ea8ff; --accent2:#8bb9ff; --accent-ink:#06182f;
+  --chip:#212836; --ok:#6cc08a; --warn:#f0b25a; --glow:rgba(110,168,255,.1); --shadow:none;}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-.wrap{max-width:900px;margin:0 auto;padding:0 16px}
-header{padding:18px 0 6px}
-h1{font-size:1.35rem;margin:0;letter-spacing:-.01em}
-.sub{color:var(--mute);font-size:.9rem;margin:2px 0 0}
+body{margin:0;background:radial-gradient(circle at top right,var(--glow),transparent 28%),var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+h1,h2,h3,.btn,.chip{font-family:var(--head)}
+.site{padding:14px 0 0}
+.shell{display:flex;align-items:center;gap:14px;padding:10px 14px 10px 16px;border-radius:1.35rem;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(20px);box-shadow:var(--shadow)}
+.brand{display:inline-flex;align-items:flex-end;gap:2px;padding:7px 13px 8px 12px;border-radius:1rem;background:linear-gradient(135deg,#1d52a0,#4a78c4);position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);text-decoration:none;flex:none}
+.brand::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:11px 11px;opacity:.5}
+.brand span{position:relative;font:800 1.15rem/.9 var(--head);letter-spacing:-.05em;color:#fff}
+.brand b{font:800 1.15rem/.9 var(--head);letter-spacing:-.05em;color:#fff}
+.brand .g{color:var(--gold)} .brand .o{color:transparent;-webkit-text-stroke:1px #fff}
+.apptitle{font:700 1rem var(--head);flex:1}
+.shell a.all{color:var(--mute);font-size:.9rem;text-decoration:none;font-weight:600}
+.shell a.all:hover{color:var(--accent)}
+header.hero{padding:26px 0 4px}
+h1{font-size:clamp(1.7rem,4.5vw,2.4rem);line-height:1.1;margin:0;letter-spacing:-.03em}
+.sub{color:var(--mute);font-size:1rem;margin:8px 0 0}
 .bar{padding:10px 0 8px;border-bottom:1px solid var(--line)}
 .stick{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}
-input[type=search],input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px}
+input[type=search],input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:11px 14px;min-height:46px}
 .filters{display:flex;gap:8px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .filters::-webkit-scrollbar{display:none}
 .chip{flex:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:8px 13px;font:inherit;font-size:.9rem;min-height:40px;cursor:pointer}
-.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip[aria-pressed=true]{background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-ink);border-color:transparent;box-shadow:0 8px 20px rgba(0,81,172,.18)}
 .sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .sel label{font-size:.75rem;color:var(--mute);display:block;margin:0 0 2px 2px}
 .meta{display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;color:var(--mute);font-size:.88rem}
 .link{background:none;border:0;color:var(--accent);font:inherit;padding:8px 0;cursor:pointer;min-height:40px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
 .card.added{border-color:var(--accent)}
 .name{font-weight:600;overflow-wrap:anywhere}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
@@ -42,19 +57,20 @@ input[type=search],input[type=text],input[type=number],select{width:100%;font:in
 .row{display:flex;gap:10px;align-items:center;margin-top:8px}
 .row select{flex:1;min-width:0;padding:9px 10px;min-height:44px}
 .speeds{color:var(--mute);font-size:.82rem;margin-top:6px}
-.est{color:var(--accent)}
-.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:10px 16px;min-height:44px;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--accent)}
-.btn.on{background:transparent;color:var(--ok);border-color:var(--ok)}
+.est{color:var(--warn)}
+.btn{font-weight:700;border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-ink);border-radius:1rem;padding:11px 18px;min-height:46px;cursor:pointer;box-shadow:0 12px 28px rgba(0,81,172,.18);transition:transform .18s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:var(--chip);color:var(--ink);box-shadow:none}
+.btn.on{background:transparent;color:var(--ok);box-shadow:inset 0 0 0 2px var(--ok)}
 .btn.sm{padding:6px 12px;min-height:36px;font-weight:500}
 .empty{text-align:center;color:var(--mute);padding:40px 0}
-.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:10;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
 .dock .in{max-width:900px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
 .dock .cnt{font-weight:600}
 .sheet{position:fixed;inset:0;z-index:20;display:none}
 .sheet.open{display:block}
 .sheet .bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
-.sheet .panel{position:absolute;left:0;right:0;bottom:0;max-height:calc(100dvh - 24px);overflow:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
+.sheet .panel{box-shadow:var(--shadow);position:absolute;left:0;right:0;bottom:0;max-height:calc(100dvh - 24px);overflow:auto;background:var(--bg);border-radius:1.5rem 1.5rem 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto}
 .panel h2{margin:0 0 4px;font-size:1.15rem}
 .panel h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:18px 0 6px}
 .item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -74,18 +90,18 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
-.privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:14px;padding:12px 14px;margin:14px 0 0}
+.privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:var(--r);padding:12px 14px;margin:14px 0 0}
 .privacy .ic{font-size:1.4rem;line-height:1.2}
 .privacy b{color:var(--ok)}
 .privacy p{margin:2px 0 0;font-size:.88rem;color:var(--mute)}
 .lock{font-size:.82rem;color:var(--ok);font-weight:600;margin:0 0 10px}
 .choices{display:grid;gap:12px;margin:14px 0}
-.choice{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.choice{background:var(--card);border:1px solid var(--line);border-radius:1.5rem;padding:20px;box-shadow:var(--shadow)}
 .choice h2{margin:0 0 6px;font-size:1.1rem}
 .choice p{margin:0 0 12px;color:var(--mute);font-size:.92rem}
 .choice .btn{width:100%}
-.resume{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--chip);border-radius:12px;padding:10px 14px;margin:10px 0}
-@media (min-width:760px){.choices{grid-template-columns:repeat(3,1fr)}}
+.resume{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--chip);border-radius:var(--r);padding:10px 14px;margin:10px 0}
+@media (min-width:860px){.choices{grid-template-columns:repeat(3,1fr)}}
 .own{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--card);border:1px dashed var(--accent);border-radius:14px;padding:12px 14px;margin:6px 0 4px}
 .own p{margin:0;font-size:.85rem;color:var(--mute)}
 .own strong{display:block;color:var(--ink);font-size:.95rem}
@@ -106,7 +122,12 @@ footer ul{padding-left:18px;margin:6px 0}
 </head>
 <body>
 <div class="wrap">
-  <header>
+  <div class="site"><div class="shell">
+    <a class="brand" href="https://maker404.com" aria-label="Maker404 home"><span>Maker</span><b class="g">4</b><b>0</b><b class="o">4</b></a>
+    <span class="apptitle"></span>
+    <a class="all" href="https://maker404.com/apps/">All apps</a>
+  </div></div>
+  <header class="hero">
     <h1>Bit Library Builder</h1>
     <p class="sub">Search vendor bit libraries, tick the bits you own, download one <code>.tools</code> file for MillMage.</p>
   </header>
@@ -118,19 +139,20 @@ footer ul{padding-left:18px;margin:6px 0}
     <div class="choices">
       <div class="choice">
         <h2>Convert my own library</h2>
-        <p>Already have a Fusion 360 or Vectric tool library with your own feeds and speeds? Upload it and get a MillMage file. You can fine-tune any bit before you download.</p>
+        <p>Already have a Fusion 360, Vectric or Carbide Create tool library with your own feeds and speeds? Upload it and get a MillMage file. You can fine-tune any bit before you download.</p>
         <p class="lock">🔒 Converted privately in your browser. Nothing is sent anywhere.</p>
         <button class="btn" id="c-own">Upload my library</button>
         <details><summary>How do I export my library?</summary>
           <ol class="steps">
             <li><b>Fusion 360:</b> Manage → Tool Library → right-click your library → Export. Choose <code>.json</code> or <code>.tools</code>.</li>
+            <li><b>Carbide Create:</b> Tool Database → Export. Save the <code>.csv</code> file.</li>
             <li><b>Vectric (VCarve/Aspire):</b> Tool Database → Export Tool Database as a <code>.vtdb</code>. Older <code>.tool</code> files work too.</li>
           </ol>
         </details>
       </div>
       <div class="choice">
         <h2>Add vendor files to convert</h2>
-        <p>Download a bit maker's tool library from their site, add it here, and pick the bits you own. Fusion 360 <code>.json</code>/<code>.tools</code> and Vectric <code>.vtdb</code>/<code>.tool</code> files work.</p>
+        <p>Download a bit maker's tool library from their site, add it here, and pick the bits you own. Fusion 360 <code>.json</code>/<code>.tools</code>, Vectric <code>.vtdb</code>/<code>.tool</code> and Carbide Create <code>.csv</code> files work.</p>
         <p class="lock">🔒 Same privacy: files stay on your device.</p>
         <button class="btn" id="c-vendor">Add vendor files</button>
         <details><summary>Where to download vendor libraries</summary>
@@ -469,13 +491,61 @@ const Conv = (() => {
     return out;
   }
 
+  /* ---------- Carbide Create CSV tool library ---------- */
+  function decodeText(buf) {      // Carbide exports are often Windows-1252 (degree signs), not UTF-8
+    const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(u); } catch { return new TextDecoder('windows-1252').decode(u); }
+  }
+  function parseCsv(text) {
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.length > 1 || row[0]) rows.push(row); row = []; }
+      else f += c;
+    }
+    if (f || row.length) { row.push(f); rows.push(row); }
+    const head = rows.shift().map(h => h.trim().toLowerCase().replace(/^\ufeff/, ''));
+    return rows.map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+  }
+  function fromCarbideCreate(text, src) {
+    const out = [];
+    for (const r of parseCsv(text)) {
+      const metric = r.metric === '1', k = metric ? 1 : IN, n = x => parseFloat(x) || 0;
+      const name = clean(r.name.replace(/"{2}/g, '"'));
+      let dia = n(r.diameter) * k, radius = n(r.cornerradius) * k, angle = n(r.angle), type, tipDia = 0;
+      const flute = n(r.flutelength) * k;
+      if (!name || !(dia > 0)) continue;
+      if (r.type === 'vee') type = 'V-Bit';
+      else if (r.type === 'ball' && angle > 0) {         // tapered ball nose: Carbide stores the per-side angle
+        type = 'Tapered Ball Mill'; angle *= 2;
+        if (dia <= radius * 2 * 1.05) dia += 2 * flute * Math.tan(angle * Math.PI / 360);   // diameter column was the ball size: derive the top
+      } else if (r.type === 'ball') type = radius >= dia / 2 * 0.95 ? 'Ball Mill' : 'End Mill';   // cove / bowl bits keep their corner radius
+      else if (r.type === 'end') { type = 'End Mill'; angle = 0; }
+      else continue;
+      if (type === 'Ball Mill') radius = 0;
+      const rate = metric ? 1 : IN, lk = k;
+      if (!(n(r.feedrate) > 0 && n(r.rpm) > 0)) continue;
+      out.push(finish({
+        id: 'c:' + hash(src + r.number + name), vendor: r.vendor || src, sku: r.model || '', name, url: /^https?:/.test(r.url) ? r.url : '', src, imperial: !metric,
+        flutes: n(r.numflutes) || 2, length: flute, shank: n(r.shaftdiameter) * k, notes: '', type, cat: ({ 'V-Bit': 'V-Bits', 'Ball Mill': 'Ball Nose', 'End Mill': 'End Mills' })[type] || 'Tapered',
+        dia, angle, tipDia, radius,
+        presets: [{ mat: material(r.material), feed: n(r.feedrate) * rate, plunge: (n(r.plungerate) || n(r.feedrate) * .5) * rate, ramp: null, rpm: Math.round(n(r.rpm)), down: n(r.depth) > 0 ? n(r.depth) * lk : null, over: null }],
+      }));
+    }
+    return out;
+  }
+
   /* ---------- file sniffing / zip ---------- */
   function sniff(buf) {
     const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     if (u[0] === 0x50 && u[1] === 0x4b) return 'zip';
     if (String.fromCharCode(...u.slice(0, 15)) === 'SQLite format 3') return 'sqlite';
     const head = new TextDecoder().decode(u.slice(0, 64)).trim();
-    return head[0] === '{' || head[0] === '[' ? 'json' : 'bin';
+    if (head[0] === '{' || head[0] === '[') return 'json';
+    return /^\W*number,vendor,|diameter.*feedrate/i.test(head) ? 'csv' : 'bin';
   }
 
   /* first entry matching `pick` in a .zip (stored or deflate) -> Uint8Array */
@@ -585,7 +655,7 @@ const Conv = (() => {
     return sorted;
   }
 
-  return { sniff, unzip, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
+  return { sniff, unzip, decodeText, fromCarbideCreate, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
 })();
 if (typeof module !== 'undefined') module.exports = Conv;
 
@@ -604,7 +674,7 @@ const initialHash = location.hash;
 let tools = CATALOG.slice();
 let byId = new Map();
 const picks = new Map();                       // key id|mat -> {id, mat}
-const F = { q: '', types: new Set(), vendors: new Set(), mat: '', dia: '', shank: '' };
+const F = { q: '', types: new Set(), vendors: new Set(), mat: '', dia: '', shank: '', src: new Set() };
 let shown = 60, existingLib = null, existingName = '';
 const PAGE = 60;
 
@@ -651,7 +721,7 @@ function reindex() {
 function filtered() {
   const toks = F.q.toLowerCase().replace(/["”]/g, '').split(/\s+/).filter(Boolean);
   return tools.filter(t =>
-    (!F.types.size || F.types.has(t.type)) && (!F.vendors.size || F.vendors.has(t.vendor)) &&
+    (!F.src.size || t.src.split(' + ').some(x => F.src.has(x))) && (!F.types.size || F.types.has(t.type)) && (!F.vendors.size || F.vendors.has(t.vendor)) &&
     (!F.mat || t.presets.some(p => p.mat === F.mat)) && (!F.dia || Math.abs(t.dia - F.dia) < 0.002) &&
     (!F.shank || (F.shank === '?' ? !t.shank : Math.abs(t.shank - F.shank) < 0.01)) &&
     toks.every(w => t._hay.includes(w)));
@@ -680,7 +750,7 @@ function card(t) {
 function render(resetPage) {
   if (resetPage) shown = PAGE;
   const list = filtered();
-  $('#count').textContent = `${list.length} of ${tools.length} bits`;
+  $('#count').textContent = `${list.length} of ${tools.length} bits` + (F.src.size ? ` · only from ${[...F.src].join(', ')}` : '');
   $('#list').innerHTML = list.length ? list.slice(0, shown).map(card).join('') : '<div class="empty">No bits match. Try fewer filters.</div>';
   $('#more').classList.toggle('hide', list.length <= shown);
   $('#more').textContent = `Show more (${list.length - shown} left)`;
@@ -731,7 +801,7 @@ $('#q').addEventListener('input', e => { clearTimeout(qTimer); qTimer = setTimeo
 $('#mat').addEventListener('change', e => { F.mat = e.target.value; render(true); });
 $('#dia').addEventListener('change', e => { F.dia = e.target.value; render(true); });
 $('#shank').addEventListener('change', e => { F.shank = e.target.value; render(true); });
-$('#reset').addEventListener('click', () => { F.q = ''; F.mat = F.dia = F.shank = ''; F.types.clear(); F.vendors.clear(); $('#q').value = ''; $('#mat').value = ''; $('#dia').value = ''; $('#shank').value = ''; render(true); });
+$('#reset').addEventListener('click', () => { F.q = ''; F.mat = F.dia = F.shank = ''; F.types.clear(); F.vendors.clear(); F.src.clear(); $('#q').value = ''; $('#mat').value = ''; $('#dia').value = ''; $('#shank').value = ''; render(true); });
 $('#addAll').addEventListener('click', () => {
   const list = filtered(); if (!list.length) return;
   if (list.length > 40 && !confirm(`Add all ${list.length} shown bits?`)) return;
@@ -829,13 +899,14 @@ $('#vendorFile').addEventListener('change', async e => {
         const j = JSON.parse(new TextDecoder().decode(buf));
         if (Array.isArray(j.data)) added = Conv.fromFusion(j, src);
         else throw new Error("That's already a MillMage library. Use 'Add to an existing library' in the review screen instead.");
-      } else if (kind === 'bin') added = Conv.fromVectricTool(buf, src);
+      } else if (kind === 'csv') added = Conv.fromCarbideCreate(Conv.decodeText(buf), src);
+      else if (kind === 'bin') added = Conv.fromVectricTool(buf, src);
       if (!added || !added.length) throw new Error('No usable bits found in ' + f.name);
-      tools = Conv.merge([tools, added]); total += added.length; loaded.push(...new Set(added.map(t => t.vendor)));
+      tools = Conv.merge([tools, added]); total += added.length; loaded.push(src);
     } catch (err) { toast(`${f.name}: ${err.message || 'could not read file'}`, 6000); }
   }
   if (total) {
-    F.vendors = new Set(loaded); F.q = ''; F.types.clear(); F.mat = F.dia = F.shank = ''; $('#q').value = '';
+    F.src = new Set(loaded); F.vendors.clear(); F.q = ''; F.types.clear(); F.mat = F.dia = F.shank = ''; $('#q').value = '';
     reindex(); render(true); showView('app');
     toast(`Loaded ${total} bits. Showing only those: tap "Add all shown" or pick individual bits.`, 7000);
   }

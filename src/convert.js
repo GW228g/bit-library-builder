@@ -249,13 +249,61 @@ const Conv = (() => {
     return out;
   }
 
+  /* ---------- Carbide Create CSV tool library ---------- */
+  function decodeText(buf) {      // Carbide exports are often Windows-1252 (degree signs), not UTF-8
+    const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(u); } catch { return new TextDecoder('windows-1252').decode(u); }
+  }
+  function parseCsv(text) {
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.length > 1 || row[0]) rows.push(row); row = []; }
+      else f += c;
+    }
+    if (f || row.length) { row.push(f); rows.push(row); }
+    const head = rows.shift().map(h => h.trim().toLowerCase().replace(/^\ufeff/, ''));
+    return rows.map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] ?? '').trim()])));
+  }
+  function fromCarbideCreate(text, src) {
+    const out = [];
+    for (const r of parseCsv(text)) {
+      const metric = r.metric === '1', k = metric ? 1 : IN, n = x => parseFloat(x) || 0;
+      const name = clean(r.name.replace(/"{2}/g, '"'));
+      let dia = n(r.diameter) * k, radius = n(r.cornerradius) * k, angle = n(r.angle), type, tipDia = 0;
+      const flute = n(r.flutelength) * k;
+      if (!name || !(dia > 0)) continue;
+      if (r.type === 'vee') type = 'V-Bit';
+      else if (r.type === 'ball' && angle > 0) {         // tapered ball nose: Carbide stores the per-side angle
+        type = 'Tapered Ball Mill'; angle *= 2;
+        if (dia <= radius * 2 * 1.05) dia += 2 * flute * Math.tan(angle * Math.PI / 360);   // diameter column was the ball size: derive the top
+      } else if (r.type === 'ball') type = radius >= dia / 2 * 0.95 ? 'Ball Mill' : 'End Mill';   // cove / bowl bits keep their corner radius
+      else if (r.type === 'end') { type = 'End Mill'; angle = 0; }
+      else continue;
+      if (type === 'Ball Mill') radius = 0;
+      const rate = metric ? 1 : IN, lk = k;
+      if (!(n(r.feedrate) > 0 && n(r.rpm) > 0)) continue;
+      out.push(finish({
+        id: 'c:' + hash(src + r.number + name), vendor: r.vendor || src, sku: r.model || '', name, url: /^https?:/.test(r.url) ? r.url : '', src, imperial: !metric,
+        flutes: n(r.numflutes) || 2, length: flute, shank: n(r.shaftdiameter) * k, notes: '', type, cat: ({ 'V-Bit': 'V-Bits', 'Ball Mill': 'Ball Nose', 'End Mill': 'End Mills' })[type] || 'Tapered',
+        dia, angle, tipDia, radius,
+        presets: [{ mat: material(r.material), feed: n(r.feedrate) * rate, plunge: (n(r.plungerate) || n(r.feedrate) * .5) * rate, ramp: null, rpm: Math.round(n(r.rpm)), down: n(r.depth) > 0 ? n(r.depth) * lk : null, over: null }],
+      }));
+    }
+    return out;
+  }
+
   /* ---------- file sniffing / zip ---------- */
   function sniff(buf) {
     const u = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     if (u[0] === 0x50 && u[1] === 0x4b) return 'zip';
     if (String.fromCharCode(...u.slice(0, 15)) === 'SQLite format 3') return 'sqlite';
     const head = new TextDecoder().decode(u.slice(0, 64)).trim();
-    return head[0] === '{' || head[0] === '[' ? 'json' : 'bin';
+    if (head[0] === '{' || head[0] === '[') return 'json';
+    return /^\W*number,vendor,|diameter.*feedrate/i.test(head) ? 'csv' : 'bin';
   }
 
   /* first entry matching `pick` in a .zip (stored or deflate) -> Uint8Array */
@@ -365,6 +413,6 @@ const Conv = (() => {
     return sorted;
   }
 
-  return { sniff, unzip, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
+  return { sniff, unzip, decodeText, fromCarbideCreate, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
 })();
 if (typeof module !== 'undefined') module.exports = Conv;
