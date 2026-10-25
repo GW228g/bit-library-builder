@@ -82,6 +82,7 @@ const Conv = (() => {
     }
     if (!t.length) { t.length = r4(Math.min(t.dia * 3, 50)); t.lenEst = true; }
     if (t.type === 'V-Bit') t.tipDia = 0;
+    if (/up[\s\/&-]*down|updown/i.test(t.name) && !/compress/i.test(t.name)) t.name += ' (Compression)';   // make the up/down geometry visible in MillMage's tool list
     for (const k of ['dia', 'tipDia', 'radius', 'length']) t[k] = r4(t[k] || 0);
     t.shank = t.shank ? r4(t.shank) : 0;
     t.presets = t.presets.filter(p => p.feed > 0 && p.rpm > 0);

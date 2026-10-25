@@ -27,6 +27,11 @@ const added = JSON.parse(fs.readFileSync('vendor-files/additions.json', 'utf8'))
     presets: base.presets.map(p => ({ ...p })) };
 });
 const tools = Conv.merge([...lists, added]);
+for (const f of JSON.parse(fs.readFileSync('vendor-files/name-fixes.json', 'utf8'))) {
+  const t = tools.find(x => x.vendor === f.vendor && x.name === f.name);
+  if (!t) throw new Error('name fix target not found: ' + f.name);
+  t.name = f.newName;
+}
 console.log('merged', tools.length);
 
 const tpl = fs.readFileSync('src/template.html', 'utf8');

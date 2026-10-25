@@ -1,0 +1,4 @@
+[
+  { "vendor": "Cadence", "name": "1/4\" Jenny", "newName": "1/4\" Jenny (Compression)", "why": "Cadence's Carbide Create library lists it as 'The Jenny, Compression'" },
+  { "vendor": "Cadence", "name": "1/8\" Mini Jenny", "newName": "1/8\" Mini Jenny (Compression)", "why": "Cadence's Carbide Create library lists it as 'Mini Jenny, Compression'" }
+]
