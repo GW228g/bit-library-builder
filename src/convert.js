@@ -81,6 +81,7 @@ const Conv = (() => {
       if (isFinite(h)) { t.length = r4(h); }
     }
     if (!t.length) { t.length = r4(Math.min(t.dia * 3, 50)); t.lenEst = true; }
+    if (t.type === 'V-Bit') t.tipDia = 0;
     for (const k of ['dia', 'tipDia', 'radius', 'length']) t[k] = r4(t[k] || 0);
     t.shank = t.shank ? r4(t.shank) : 0;
     t.presets = t.presets.filter(p => p.feed > 0 && p.rpm > 0);
@@ -112,8 +113,8 @@ const Conv = (() => {
         }
         case 'chamfer mill':
           tool.angle = 2 * (g.TA || 0);
-          if (g['tip-diameter'] > 0) { tool.type = 'Tapered End Mill'; tool.tipDia = g['tip-diameter'] * k; }
-          else tool.type = 'V-Bit';
+          if (g['tip-diameter'] * k > Math.max(0.5, D * 0.05)) { tool.type = 'Tapered End Mill'; tool.tipDia = g['tip-diameter'] * k; }
+          else { tool.type = 'V-Bit'; tool.tipDia = (g['tip-diameter'] || 0) * k; }
           break;
         default: continue;
       }
@@ -175,8 +176,8 @@ const Conv = (() => {
         case 2: tool.type = 'End Mill'; tool.radius = (g.tip_radius || 0) * k; break;
         case 3: case 4:
           tool.angle = g.included_angle || 0;
-          if (g.flat_diameter > 0) { tool.type = 'Tapered End Mill'; tool.tipDia = g.flat_diameter * k; }
-          else tool.type = 'V-Bit';
+          if (g.flat_diameter * k > Math.max(0.5, tool.dia * 0.05)) { tool.type = 'Tapered End Mill'; tool.tipDia = g.flat_diameter * k; }
+          else { tool.type = 'V-Bit'; tool.tipDia = (g.flat_diameter || 0) * k; }
           break;
         case 8: {   // form tools: keep only the V-groove / engraving ones, whose angle is in the name
           const am = name.match(/(\d+(?:\.\d+)?)\s*(?:°|deg)/i);
@@ -346,6 +347,26 @@ const Conv = (() => {
     return res;
   }
 
+  /* ---------- starting speeds for a bit that isn't in any vendor file ----------
+   * Finds the most similar catalog bit and keeps ITS chip load (feed per tooth), so the new bit
+   * gets the same cut per tooth at the same RPM. spec: {type, dia, angle, flutes, mat} in mm. */
+  function estimate(spec, tools, n = 3) {
+    const v = (spec.vendor || '').toLowerCase().replace(/[^a-z]/g, '');
+    const near = t => {
+      let d = Math.abs(Math.log(t.dia / spec.dia)) * 3 + Math.abs((t.flutes || 2) - spec.flutes) * 0.6;
+      if (t.type !== spec.type) d += 6;
+      if (spec.angle || t.angle) d += Math.abs((t.angle || 0) - (spec.angle || 0)) / 10;
+      if (v && t.vendor.toLowerCase().replace(/[^a-z]/g, '').includes(v)) d -= 1.2;     // same brand cuts the same way
+      return d;
+    };
+    return tools.filter(t => t.presets.length && (t.type === spec.type || (spec.type === 'V-Bit' && t.type === 'Tapered End Mill' && t.angle > 20)))
+      .map(t => ({ t, d: near(t) })).sort((a, b) => a.d - b.d).slice(0, n).map(({ t }) => {
+        const p = t.presets.find(x => x.mat === spec.mat) || t.presets.find(x => /hard|wood/i.test(x.mat)) || t.presets[0];
+        const rpm = spec.rpm || p.rpm, chip = p.feed / (p.rpm * (t.flutes || 2)), feed = rpm * spec.flutes * chip, k = feed / p.feed;
+        return { basis: t, chip, preset: { mat: spec.mat || p.mat, feed, plunge: p.plunge * k, ramp: null, rpm, down: p.down ? p.down * Math.min(1, spec.dia / t.dia) : null, over: p.over || null } };
+      });
+  }
+
   /* ---------- MillMage export ---------- */
   function defaults(t) {
     const D = t.dia, L = t.length;
@@ -368,7 +389,7 @@ const Conv = (() => {
     const cat = opts.category && opts.category !== 'material' ? opts.category : p.mat === 'General' ? t.vendor : p.mat;   // no material given -> file under the vendor
     const sec = x => mm(x / 60);
     const shankNote = t.shank ? `Shank ${t.imperial ? t.shank / IN : t.shank}${t.imperial ? '"' : ' mm'}` : '';
-    const notes = [t.sku && `SKU ${t.sku}`, shankNote, `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.custom ? 'custom speeds/feeds' : '', p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
+    const notes = [t.sku && `SKU ${t.sku}`, shankNote, t.custom ? `Custom bit. ${t.basis || 'Speeds estimated from a similar bit'} (same chip load)` : `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.custom ? 'custom speeds/feeds' : '', p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
       .filter(Boolean).join('. ') + '. Verify before cutting.';
     return {
       Category: cat,
@@ -413,6 +434,6 @@ const Conv = (() => {
     return sorted;
   }
 
-  return { sniff, unzip, decodeText, fromCarbideCreate, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
+  return { estimate, sniff, unzip, decodeText, fromCarbideCreate, fromFusion, fromVectricDb, fromVectricTool, merge, buildLibrary, toMillMage, defaults, hash, TYPES };
 })();
 if (typeof module !== 'undefined') module.exports = Conv;

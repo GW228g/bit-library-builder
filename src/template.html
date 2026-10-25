@@ -104,6 +104,10 @@ details{margin-top:14px}
 summary{cursor:pointer;color:var(--accent);min-height:36px;padding:6px 0}
 .steps{font-size:.88rem;color:var(--mute);padding-left:18px;margin:6px 0}
 .hide{display:none!important}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.spec label{font-size:.72rem;color:var(--mute);display:block;margin:0 0 2px 2px}
+.sugg{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin-top:8px}
+.sugg b{font-family:var(--head)}
 .privacy{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--ok);border-radius:var(--r);padding:14px 16px;margin:0 0 14px}
 .privacy .ic{font-size:1.4rem;line-height:1.2}
 .privacy b{color:var(--ok)}
@@ -201,7 +205,7 @@ footer ul{padding-left:18px;margin:6px 0}
       <div><label for="shank">Shank size</label><select id="shank"></select></div>
     </div>
   </div>
-  <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="load">Add file…</button></span></div>
+  <div class="meta"><span id="count"></span><span><button class="link" id="addAll">Add all shown</button> · <button class="link" id="reset">Clear filters</button> · <button class="link" id="specBtn">Add a bit by spec…</button> · <button class="link" id="load">Add file…</button></span></div>
   <div id="list"></div>
   <div style="text-align:center"><button class="btn ghost hide" id="more">Show more</button></div>
   </section>
@@ -265,6 +269,31 @@ footer ul{padding-left:18px;margin:6px 0}
     </details>
   </div>
 </div>
+<div class="sheet" id="specSheet" role="dialog" aria-modal="true" aria-label="Add a bit by spec">
+  <div class="bg" id="specBg"></div>
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>Add a bit by its specs</h2><button class="x" id="specClose" aria-label="Close">×</button></div>
+    <p class="help">Can't find your bit? Enter what's on the product page. The app finds the most similar bit in the library and keeps its chip load to suggest starting feeds and speeds. They're estimates, so test in scrap.</p>
+    <div class="opt"><label class="opt"><input type="radio" name="spu" value="in" checked> Inches</label><label class="opt"><input type="radio" name="spu" value="mm"> Millimeters</label></div>
+    <div class="spec">
+      <div><label>Type</label><select id="sp-type"></select></div>
+      <div><label>Brand / vendor</label><input type="text" id="sp-vendor" placeholder="Bits&Bits"></div>
+      <div><label>Part number (optional)</label><input type="text" id="sp-sku" placeholder="425-500-VG60"></div>
+      <div><label>Cutting diameter</label><input type="number" step="any" inputmode="decimal" id="sp-dia" placeholder="0.5"></div>
+      <div data-for="V-Bit,Tapered Ball Mill,Tapered End Mill"><label>Included angle (°)</label><input type="number" step="any" inputmode="decimal" id="sp-angle" placeholder="60"></div>
+      <div data-for="Tapered Ball Mill,Round-over,End Mill"><label>Tip / corner radius</label><input type="number" step="any" inputmode="decimal" id="sp-rad"></div>
+      <div data-for="Tapered End Mill"><label>Tip (flat) diameter</label><input type="number" step="any" inputmode="decimal" id="sp-tip"></div>
+      <div><label>Flutes</label><input type="number" step="1" inputmode="numeric" id="sp-flutes" value="2"></div>
+      <div><label>Length of cut</label><input type="number" step="any" inputmode="decimal" id="sp-len" placeholder="0.40"></div>
+      <div><label>Shank (optional)</label><input type="number" step="any" inputmode="decimal" id="sp-shank" placeholder="0.25"></div>
+      <div><label>Material</label><select id="sp-mat"></select></div>
+      <div><label>My max RPM (optional)</label><input type="number" inputmode="numeric" id="sp-rpm" placeholder="e.g. 16000"></div>
+    </div>
+    <h3>Suggested starting point</h3>
+    <div id="spOut" class="help">Enter a diameter and flutes to see suggestions.</div>
+    <div class="actions"><button class="btn" id="spAdd" disabled>Add to my bits</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <input type="file" id="vendorFile" class="hide" multiple>
 
@@ -282,7 +311,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
 const initialHash = location.hash;
-let tools = CATALOG.slice();
+let tools = CATALOG.slice();   // custom bits are appended at init
 let byId = new Map();
 const picks = new Map();                       // key id|mat -> {id, mat}
 const F = { q: '', types: new Set(), vendors: new Set(), mat: '', dia: '', shank: '', src: new Set() };
@@ -355,14 +384,14 @@ function card(t) {
     <div class="tags">${tags.join('')}</div>
     <div class="speeds">${rate(t, p.feed)} feed · ${rate(t, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm${p.down == null ? ' · <span class="est">depth/stepover est.</span>' : ''}</div>
     <div class="row">${t.presets.length > 1 ? `<select data-sel="${esc(t.id)}" aria-label="Material">${opts}</select>` : `<span class="tag" style="flex:1">${esc(mat)}</span><input type="hidden" data-sel="${esc(t.id)}" value="${esc(mat)}">`}
-    <button class="btn ${added ? 'on' : ''}" data-add="${esc(t.id)}">${added ? '✓ Added' : 'Add'}</button></div></div>`;
+    <button class="btn ${added ? 'on' : ''}" data-add="${esc(t.id)}">${added ? '✓ Added' : 'Add'}</button></div>${t.custom ? `<div class="speeds">${esc(t.basis || '')} <button class="link" data-del="${esc(t.id)}">Delete this custom bit</button></div>` : ''}</div>`;
 }
 
 function render(resetPage) {
   if (resetPage) shown = PAGE;
   const list = filtered();
   $('#count').textContent = `${list.length} of ${tools.length} bits` + (F.src.size ? ` · only from ${[...F.src].join(', ')}` : '');
-  $('#list').innerHTML = list.length ? list.slice(0, shown).map(card).join('') : '<div class="empty">No bits match. Try fewer filters.</div>';
+  $('#list').innerHTML = list.length ? list.slice(0, shown).map(card).join('') : '<div class="empty">No bits match. Try fewer filters, or <button class="link" data-spec>add it by its specs</button>.</div>';
   $('#more').classList.toggle('hide', list.length <= shown);
   $('#more').textContent = `Show more (${list.length - shown} left)`;
   document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', F[c.dataset.k].has(c.dataset.v)));
@@ -523,6 +552,56 @@ $('#vendorFile').addEventListener('change', async e => {
   }
 });
 
+/* ---------- add a bit by spec ---------- */
+const customs = store.get('bp.custom', []);
+const specUnits = () => document.querySelector('input[name=spu]:checked').value;
+const specNum = id => { const v = parseFloat($(id).value); return v > 0 ? v : 0; };
+let specResults = [];
+function specTypes() {
+  const t = $('#sp-type').value;
+  document.querySelectorAll('#specSheet [data-for]').forEach(el => el.classList.toggle('hide', !el.dataset.for.split(',').includes(t)));
+}
+function specSpec() {
+  const k = specUnits() === 'in' ? 25.4 : 1, type = $('#sp-type').value;
+  return { type, dia: specNum('#sp-dia') * k, angle: specNum('#sp-angle'), flutes: Math.round(specNum('#sp-flutes')) || 2, mat: $('#sp-mat').value,
+    rpm: specNum('#sp-rpm'), vendor: $('#sp-vendor').value.trim(), radius: specNum('#sp-rad') * k, tipDia: specNum('#sp-tip') * k, length: specNum('#sp-len') * k, shank: specNum('#sp-shank') * k, imperial: specUnits() === 'in' };
+}
+function specRefresh() {
+  specTypes();
+  const sp = specSpec(), out = $('#spOut');
+  $('#spAdd').disabled = true;
+  if (!sp.dia || (['V-Bit', 'Tapered Ball Mill', 'Tapered End Mill'].includes(sp.type) && !sp.angle)) { out.textContent = 'Enter the diameter' + (sp.type === 'V-Bit' ? ' and angle' : '') + ' to see suggestions.'; specResults = []; return; }
+  specResults = Conv.estimate(sp, tools.filter(t => !t.custom));
+  if (!specResults.length) { out.textContent = 'No similar bit found in the library for that type.'; return; }
+  const imp = sp.imperial;
+  out.innerHTML = '<p class="help" style="margin:0">Based on the nearest bits (pick one). Each keeps its own chip load:</p>' + specResults.map((r, i) => {
+    const p = r.preset, b = r.basis;
+    return `<label class="sugg" style="display:block;cursor:pointer"><input type="radio" name="spb" value="${i}" ${i ? '' : 'checked'}> <b>${esc(b.name.slice(0, 60))}</b> <span class="help">(${esc(b.vendor)})</span><br>
+      <span class="help">${rate({ imperial: imp }, p.feed)} feed · ${rate({ imperial: imp }, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm · chip load ${imp ? (r.chip / 25.4).toFixed(4) + '"' : r.chip.toFixed(3) + ' mm'}/tooth</span></label>`;
+  }).join('');
+  $('#spAdd').disabled = false;
+}
+function openSpec(v) { if (v) { $('#sp-type').innerHTML = Conv.TYPES.map(t => `<option>${t}</option>`).join(''); $('#sp-mat').innerHTML = $('#mat').innerHTML.replace('Any material', 'Material').replace('<option value="">', '<option value="">'); if (F.mat) $('#sp-mat').value = F.mat; specRefresh(); } $('#specSheet').classList.toggle('open', v); document.body.style.overflow = v ? 'hidden' : ''; }
+$('#specBtn').addEventListener('click', () => openSpec(true));
+document.addEventListener('click', e => { if (e.target.closest('[data-spec]')) openSpec(true); const d = e.target.closest('[data-del]'); if (d && confirm('Delete this custom bit?')) { const id = d.dataset.del; customs.splice(0, customs.length, ...customs.filter(c => c.id !== id)); store.set('bp.custom', customs); [...picks.keys()].filter(k => k.startsWith(id + '|')).forEach(k => picks.delete(k)); tools = tools.filter(t => t.id !== id); reindex(); updateDock(); render(); } });
+$('#specClose').addEventListener('click', () => openSpec(false));
+$('#specBg').addEventListener('click', () => openSpec(false));
+$('#specSheet').addEventListener('input', specRefresh);
+$('#specSheet').addEventListener('change', specRefresh);
+$('#spAdd').addEventListener('click', () => {
+  const sp = specSpec(), pick = specResults[+(document.querySelector('input[name=spb]:checked') || { value: 0 }).value] || specResults[0]; if (!pick) return;
+  const sku = $('#sp-sku').value.trim(), vendor = sp.vendor || 'My bits';
+  let length = sp.length, lenEst = false;
+  if (!length) { lenEst = true; length = sp.type === 'V-Bit' && sp.angle ? sp.dia / 2 / Math.tan(sp.angle * Math.PI / 360) : Math.min(sp.dia * 3, 50); }
+  const f = x => sp.imperial ? inchStr(x) : +x.toFixed(2) + ' mm';
+  const name = [sku, sp.type === 'V-Bit' ? `${sp.angle}° V-Bit` : sp.type, '⌀ ' + f(sp.dia), sp.flutes + ' flute'].filter(Boolean).join(' · ');
+  const t = { id: 'u:' + Conv.hash(Date.now() + name), custom: true, vendor, sku, name, type: sp.type, cat: 'Custom', imperial: sp.imperial, dia: sp.dia, flutes: sp.flutes,
+    angle: sp.angle, tipDia: sp.tipDia, radius: sp.radius, length, lenEst, shank: sp.shank, url: '', src: 'Custom', notes: '', basis: `Estimated from ${pick.basis.name.slice(0, 40)}`, presets: [pick.preset] };
+  customs.push(t); store.set('bp.custom', customs);
+  tools.push(t); picks.set(t.id + '|' + pick.preset.mat, { id: t.id, mat: pick.preset.mat });
+  reindex(); updateDock(); render(true); openSpec(false); toast('Added to your bits. Edit its speeds in the review screen if you like.');
+});
+
 /* ---------- views ---------- */
 const VENDOR_LINKS = [['Bits & Bits', 'https://bitsbits.com'], ['SpeTool', 'https://spetools.com/pages/spetool-tool-file-database'], ['Amana Tool (Vectric library)', 'https://www.amanatool.com/view-amana-tool-vectric-library'], ['Whiteside Machine Company', 'https://www.whitesiderouterbits.com'], ['Cadence Mfg & Design', 'https://www.cadencemfgdesign.com/general-6']];
 $('#vendorLinks').innerHTML = VENDOR_LINKS.map(([n, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${n}</a></li>`).join('');
@@ -544,6 +623,7 @@ $('#resumeBtn').addEventListener('click', () => showView('app'));
 $('#resumeClear').addEventListener('click', () => { if (confirm(`Remove all ${picks.size} picked bits?`)) { picks.clear(); updateDock(); render(); showView('home'); } });
 
 /* ---------- init ---------- */
+customs.forEach(t => tools.push(t));
 reindex();
 try {
   const m = location.hash.match(/#p=(.+)/);
