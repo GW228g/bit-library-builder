@@ -16,7 +16,17 @@ const lists = [
   Conv.fromVectricTool(fs.readFileSync('vendor-files/whiteside.tool'), 'Whiteside'),
 ];
 lists.forEach(l => console.log(l.length, l[0]?.src));
-const tools = Conv.merge(lists);
+// hand-curated bits that are newer than the vendors' downloadable libraries
+const added = JSON.parse(fs.readFileSync('vendor-files/additions.json', 'utf8')).map(a => {
+  const base = lists.flat().find(t => t.sku === a.speedsFrom && t.vendor === a.vendor);
+  if (!base) throw new Error('No basis bit for ' + a.sku + ': ' + a.speedsFrom);
+  const k = 25.4, g = a.inches;
+  return { id: 'x:' + a.vendor + ':' + a.sku, vendor: a.vendor, sku: a.sku, name: a.name, url: a.url, src: a.vendor, type: a.type, cat: a.cat, imperial: true,
+    dia: g.dia * k, angle: g.angle, flutes: g.flutes, length: g.length * k, shank: g.shank * k, tipDia: 0, radius: 0, notes: a.source, estBasis: a.speedsFrom,
+    // same RPM and flute count as the basis bit => same chip load => same feed
+    presets: base.presets.map(p => ({ ...p })) };
+});
+const tools = Conv.merge([...lists, added]);
 console.log('merged', tools.length);
 
 const tpl = fs.readFileSync('src/template.html', 'utf8');

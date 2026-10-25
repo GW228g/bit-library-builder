@@ -382,7 +382,7 @@ function card(t) {
   return `<div class="card ${added ? 'added' : ''}" data-id="${esc(t.id)}">
     <div class="name">${esc(t.name)}</div>
     <div class="tags">${tags.join('')}</div>
-    <div class="speeds">${rate(t, p.feed)} feed · ${rate(t, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm${p.down == null ? ' · <span class="est">depth/stepover est.</span>' : ''}</div>
+    <div class="speeds">${rate(t, p.feed)} feed · ${rate(t, p.plunge)} plunge · ${p.rpm.toLocaleString()} rpm${p.down == null ? ' · <span class="est">depth/stepover est.</span>' : ''}${t.estBasis ? ` · <span class="est">speeds est. from ${esc(t.estBasis)}</span>` : ''}</div>
     <div class="row">${t.presets.length > 1 ? `<select data-sel="${esc(t.id)}" aria-label="Material">${opts}</select>` : `<span class="tag" style="flex:1">${esc(mat)}</span><input type="hidden" data-sel="${esc(t.id)}" value="${esc(mat)}">`}
     <button class="btn ${added ? 'on' : ''}" data-add="${esc(t.id)}">${added ? '✓ Added' : 'Add'}</button></div>${t.custom ? `<div class="speeds">${esc(t.basis || '')} <button class="link" data-del="${esc(t.id)}">Delete this custom bit</button></div>` : ''}</div>`;
 }

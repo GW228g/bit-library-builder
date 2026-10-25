@@ -1,0 +1,13 @@
+[
+  {
+    "vendor": "Bits&Bits",
+    "sku": "425-500-VG60",
+    "name": "60° 3 Flute V-Groove Bit x 1/2\" Dia. - AstraHP Coated - 425-500-VG60",
+    "type": "V-Bit",
+    "cat": "V-Groove and V-Bits",
+    "inches": { "dia": 0.5, "angle": 60, "flutes": 3, "length": 0.4, "shank": 0.25 },
+    "url": "https://bitsbits.com/product/bitsbits-1-2-3-flute-60-degree-v-groove-bit/",
+    "speedsFrom": "425-375-VG60",
+    "source": "Specs: bitsbits.com product page (checked Oct 2026). Not in their Apr 2024 tool libraries; no feeds/speeds published, so speeds are carried over from the 3/8\" 3-flute 60° sibling at the same chip load."
+  }
+]

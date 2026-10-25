@@ -389,7 +389,7 @@ const Conv = (() => {
     const cat = opts.category && opts.category !== 'material' ? opts.category : p.mat === 'General' ? t.vendor : p.mat;   // no material given -> file under the vendor
     const sec = x => mm(x / 60);
     const shankNote = t.shank ? `Shank ${t.imperial ? t.shank / IN : t.shank}${t.imperial ? '"' : ' mm'}` : '';
-    const notes = [t.sku && `SKU ${t.sku}`, shankNote, t.custom ? `Custom bit. ${t.basis || 'Speeds estimated from a similar bit'} (same chip load)` : `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.custom ? 'custom speeds/feeds' : '', p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
+    const notes = [t.sku && `SKU ${t.sku}`, shankNote, t.estBasis ? `Speeds estimated from ${t.estBasis} at the same chip load (the vendor doesn't publish them for this bit)` : t.custom ? `Custom bit. ${t.basis || 'Speeds estimated from a similar bit'} (same chip load)` : `${t.vendor} starting point${p.mat === 'General' ? '' : ' for ' + p.mat}`, p.custom ? 'custom speeds/feeds' : '', p.down == null || p.over == null ? 'step-down/step-over estimated' : '', t.lenEst ? 'flute length estimated' : '']
       .filter(Boolean).join('. ') + '. Verify before cutting.';
     return {
       Category: cat,
